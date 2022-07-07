@@ -1,0 +1,52 @@
+---
+title: "Understanding Clusters"
+author: "Transit Equity Team"
+date: '2022-06-14'
+output: html_document
+---
+
+Load clustered SVI data. This is the same as the raw SVI data with each census tract given a cluster label. The two clusters were computed using the indices loading onto the first factor in the factor analysis, followed by projection via UMAP and clustering via spectral clustering.
+
+```{r load-data, message=FALSE}
+#setwd('set your directory to /TransitEquity/')
+library(tidyverse)
+svi_clustered <- read_csv("processed_data/SVI_E_clustered.csv", 
+    col_types = cols(FIPS = col_skip(), cluster = col_factor(levels = c("0", 
+        "1"))))
+```
+
+
+Visualize the densities of each indicator separately on the two clusters.
+
+```{r visualise-density}
+svi_means <- svi_clustered %>% 
+  group_by(cluster) %>% 
+  summarize_all(mean)
+
+for(col in colnames(svi_clustered)){
+  if(grepl('E', col, fixed = TRUE)){
+    column = svi_clustered[[col]]
+    g1 <- ggplot(data=svi_clustered, aes_string(x=col, fill='cluster')) +
+               geom_density(alpha=.3) +
+               geom_vline(mapping = aes_string(xintercept=col, color='cluster'), data = svi_means, show.legend = FALSE) +
+               labs(title = "Density plot with cluster means", x=col)
+    print(g1)
+  }
+}
+```
+
+Visualize the boxplots of each indicator separately on the two clusters.
+
+```{r visualise-boxplots}
+for(col in colnames(svi_clustered)){
+  if(grepl('E', col, fixed = TRUE)){
+    column = svi_clustered[[col]]
+    g1 <- ggplot(data=svi_clustered, aes_string(x=col, fill="cluster")) +
+               facet_grid(rows=vars(cluster)) +
+               geom_boxplot(alpha=.3) + labs(x=col)
+    print(g1)
+  }
+}
+```
+
+Note that the cluster labeled "0" is considered more socially vulnerable by most every index.

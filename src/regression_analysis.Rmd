@@ -1,0 +1,569 @@
+---
+title: "Job Accessibility Regression Analysis"
+author: "Transit Equity Team"
+date: '2022-06-13'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Loading data
+
+```{r libraries, message=FALSE}
+library(tidyverse)
+library(modelr)
+library(gt)
+```
+
+We begin by loading all of the job accessibility data computed at various thresholds (i.e., what is someone's job accessibility when they're willing to travel via car/transit/transit-with-Red-Line for the stated length of time?).
+
+```{r find-directories}
+#setwd('set your directory to /TransitEquity/')
+data_dir <- "processed_data/job_accessibility"
+mode <- "transit"
+transit_dir <- str_glue("{data_dir}/{mode}")
+transit_files <- list.files(transit_dir, pattern = "*.csv")
+
+mode <- "drive"
+drive_dir <- str_glue("{data_dir}/{mode}")
+drive_files <- list.files(drive_dir, pattern = "*.csv")
+
+mode <- "min-transit-all"  # The minimum of original transit and added red line
+min_dir <- str_glue("{data_dir}/{mode}")
+min_files <- list.files(min_dir, pattern = "*.csv")
+
+drive_threshes <- drive_files %>% 
+  map_chr(str_remove_all, ".csv") %>% 
+  map_dbl(as.double) %>%
+  sort() %>% 
+  as_factor()
+
+transit_threshes <- transit_files %>% 
+  map_chr(str_remove_all, ".csv") %>% 
+  map_dbl(as.double) %>% 
+  sort() %>% 
+  as_factor()
+
+min_threshes <- min_files %>% 
+  map_chr(str_remove_all, ".csv") %>% 
+  map_dbl(as.double) %>% 
+  sort() %>% 
+  as_factor()
+```
+
+```{r load-job-accessibilities}
+load_ja <- function(thresh, mode, red_line, dir) {
+  # This will load a list of job accessibilities from the given directory dir 
+  # with the threshold thresh. These values will be tagged with the given 
+  # threshold, mode of transportation, and whether these values are pre- or 
+  # post-red line.
+  read_csv(str_glue("{dir}/{thresh}.csv"), show_col_types = FALSE) %>%
+    transmute(FIPS = tract_id, mode = mode, red_line = red_line,
+              threshold = thresh, gravity_sum = gravity_sum)
+}
+
+# Load all of the job accessibilities in transit_dir, drive_dir, min_dir
+transit <- transit_threshes %>%
+  map(load_ja, mode = "transit", red_line = FALSE, dir = transit_dir)
+drive <- drive_threshes %>%
+  map(load_ja, mode = "drive", red_line = FALSE, dir = drive_dir)
+min <- min_threshes %>%
+  map(load_ja, mode = "transit", red_line = TRUE, dir = min_dir)
+
+# Join (matching by FIPS) them all into one data frame
+all_ja <- bind_rows(transit, drive, min) %>% 
+  mutate(mode = factor(mode, c("transit", "drive")))
+```
+
+Here, we get the list of tracts that are computed to be within 15 minutes walking distance of a Red Line stop.
+
+```{r load-red-line-tracts}
+mode <- "min-transit"
+# Choose any file in the min-transit directory
+red_line_file <-  str_glue("{data_dir}/{mode}/105.csv")
+red_line_tracts <- read_csv(red_line_file, show_col_types = FALSE) %>% 
+  select(FIPS = tract_id)
+```
+
+Here, we load the SVI data and clusters for each tract. We skip all indices that were not loaded onto the first factor in the factor analysis.
+
+```{r load-clusters}
+svi <- read_csv("processed_data/SVI_E_clustered.csv", 
+    col_types = cols(E_TOTPOP = col_skip(), 
+        E_HU = col_skip(), E_HH = col_skip(), 
+        E_AGE65 = col_skip(), E_LIMENG = col_skip(), 
+        E_MUNIT = col_skip(), E_MOBILE = col_skip(), 
+        E_CROWD = col_skip(), E_GROUPQ = col_skip(), 
+        E_DAYPOP = col_skip(), cluster = col_factor(levels = c("0", "1"))))
+```
+
+# Comparisons via linear regression
+
+First, we relate the job accessibility via transit with the job accessibility via car. The specific choice of thresholds of 70 minutes via transit and 10 minutes via car is explained in Appendix A. We specifically compare the gravity sum job accessibility calculation.
+
+```{r td-regression}
+t_thresh = "70"
+d_thresh = "10"
+
+ja <- all_ja %>% 
+  filter((mode == "transit" & threshold == t_thresh) |
+           (mode == "drive" & threshold == d_thresh), red_line == FALSE) %>% 
+  select(-red_line)%>%
+  pivot_wider(FIPS, names_from = mode, values_from = gravity_sum, 
+              names_glue = "gravity_sum_{mode}")
+
+# These two tracts have very high transit accessibility for their driving 
+# accessibility. This is still to be investigated. For now, we remove them as 
+# outliers to assess the broader trends.
+ja <- ja %>% filter(!(FIPS %in% c("24510110200", "24510220100")))
+
+td_lm = lm(gravity_sum_transit ~ gravity_sum_drive, 
+              data = ja)
+summary(td_lm)
+
+ggplot(data = ja,
+       mapping = aes(x = gravity_sum_drive, y = gravity_sum_transit)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", formula = "y ~ x") +
+  labs(x = str_glue("Job accessibility when driving for {d_thresh} minutes"),
+       y = str_glue("Job accessibility by transit for {t_thresh} minutes"))
+```
+
+Notice that the adjusted $r^2 = $ `r summary(td_lm)$adj.r.squared`, and the slope is $\approx$ `r summary(td_lm)$coefficients[[2]]`. This suggests that job accessibility via transit is very strongly correlated to job accessibility via car. E.g., if you were to move from one census tract to another, you would expect your job prospects to increase/decrease by the same amount whether you use transit or a car.
+
+One important thing to note is that the job accessibility computed for driving uses the driving times computed at a fixed speed. Thus, we can really think of job accessibility by driving as a weighted form of distance to one's job. As such, in future plots, we label job accessibility by driving as "weighted distance to job" for simplicity.
+
+This correlation is very strong, but we are also interested in how job accessibility via transit may correlate with SVI indicators that loaded onto the first factor of the factor analysis. For this, we look at the multivariate regression.
+
+```{r svi-regression}
+ja <- ja %>% left_join(svi, by = "FIPS")
+
+svi_lm = lm(gravity_sum_transit ~ ., 
+            data = select(ja, gravity_sum_transit, starts_with("E")))
+summary(svi_lm)
+```
+
+We see a much lower adjusted $r^2$ of `r summary(svi_lm)$adj.r.squared`.
+
+If we go back to regression on the driving job accessibility while including the SVI factors, we don't see too much improvement from regressing against the driving job accessibility alone.
+
+```{r td-svi-regression}
+td_svi_lm = lm(gravity_sum_transit ~ .,
+                  data = select(ja, gravity_sum_transit, gravity_sum_drive, 
+                                starts_with("E")))
+summary(td_svi_lm)
+```
+
+Now, we restrict our attention to the residuals to support the fact that linear regression is a good model in this setting. We see that the residuals are approximately normally distributed and that the linear regression has distributed the explained variance well across the predictions.
+
+```{r td-residual-analysis}
+
+ja_td_residuals <- ja %>% add_residuals(td_lm)
+
+ggplot(ja_td_residuals, aes(resid)) +
+  geom_histogram(bins = 30) +
+  labs(x = "Residual from regression against driving job accessibility",
+       y = "Number of census tracts")
+
+ggplot(ja_td_residuals, aes(gravity_sum_drive, resid)) +
+  geom_ref_line(h = 0) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  labs(x = "Job accessibility via driving",
+       y = "Residual from regression")
+
+```
+
+Finally, we regress on the residuals of the original regression using the SVI indicators as the factors to see if any patterns emerge.
+
+```{r td-residual-regression, warning=FALSE}
+resid_svi_lm = lm(resid ~ ., 
+                 data = select(ja_td_residuals, resid, starts_with("E")))
+summary(resid_svi_lm)
+
+ggplot(ja_td_residuals, aes(E_PCI, resid)) +
+  geom_ref_line(h = 0) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x)
+```
+
+The only factor that may be statistically significant is the per capita income, but the associated slope is relatively small. Additionally, the adjusted $r^2$ is only `r summary(resid_svi_lm)$adj.r.squared`, suggesting that there is not much extra variance explained.
+
+See Appendix B for an alternative approach to the regression which can achieve better fits at the cost of some complexity.
+
+# Adding the red line
+
+We now consider how these comparisons change based on the approximated travel time improvements that the Red Line would offer. We will restrict our attention to those tracts that are serviced by the Red Line (defined as having a centroid within 15 minute of a proposed Red Line stop).
+
+```{r load-red-line-data}
+t_thresh = "70"
+d_thresh = "10"
+
+ja <- left_join(all_ja %>% filter(mode == "transit", threshold == t_thresh),
+          all_ja %>% filter(mode == "drive", threshold == d_thresh) %>% 
+            select(FIPS, gravity_sum),
+          by = "FIPS",
+          suffix = c("_transit", "_drive")) %>% 
+  left_join(svi %>% select(FIPS, cluster), by = "FIPS") %>%
+  drop_na() %>%
+  filter(FIPS %in% red_line_tracts[[1]])
+```
+
+When we repeat the same regressions as above using both with and without the Red Line, we see similarly good fits.
+
+```{r td-rl-regression}
+td_lm = lm(gravity_sum_transit ~ gravity_sum_drive, 
+           data = filter(ja, (mode == "transit" & red_line == FALSE) |
+                           (mode == "drive")))
+td_rl_lm = lm(gravity_sum_transit ~ gravity_sum_drive, 
+           data = filter(ja, (mode == "transit" & red_line == TRUE) |
+                           (mode == "drive")))
+summary(td_lm)
+summary(td_rl_lm)
+```
+
+Interpreting these regressions, we see that the Red Line significantly increases job accessibility relative to the weighted distance to job. In particular, this increase appears more dramatic for tracts that originally had lower job accessibility via transit.
+
+```{r plot-td-rl-regression}
+ggplot(data = ja,
+       aes(x = gravity_sum_drive, y = gravity_sum_transit, color = !red_line)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", formula = y ~ x, alpha = 0.4) +
+  labs(title="Job accessibility before and after Red Line",
+       x = "Weighted distance to job",
+       y = "Job accessibility") +
+  scale_color_discrete(name = "",
+                       labels = c("With Red Line", "Without Red Line"))
+```
+
+When we split our analysis based on which computed SVI cluster the tract was assigned, we see see that the Red Line produces higher relative increase in job accessibility on the "disadvantaged" cluster, though both clusters benefit.
+
+```{r plot-td-rl-regression-clustered}
+disadv_td_lm = lm(gravity_sum_transit ~ gravity_sum_drive,
+           data = filter(ja, cluster == "0"),
+           (mode == "transit" & red_line == FALSE) | (mode == "drive"))
+disadv_td_rl_lm =  lm(gravity_sum_transit ~ gravity_sum_drive,
+               data = filter(ja, cluster == "0"),
+               (mode == "transit" & red_line == TRUE) | (mode == "drive"))
+summary(disadv_td_lm)
+summary(disadv_td_rl_lm)
+
+non_disadv_td_lm = lm(gravity_sum_transit ~ gravity_sum_drive,
+           data = filter(ja, cluster == "1"),
+           (mode == "transit" & red_line == FALSE) | (mode == "drive"))
+non_disadv_td_rl_lm =  lm(gravity_sum_transit ~ gravity_sum_drive,
+               data = filter(ja, cluster == "1"),
+               (mode == "transit" & red_line == TRUE) | (mode == "drive"))
+summary(non_disadv_td_lm)
+summary(non_disadv_td_rl_lm)
+
+label <- c("0" = "Disadvantaged", "1" = "Non-disadvantaged")
+ggplot(data = ja,
+       aes(x = gravity_sum_drive, y = gravity_sum_transit, color = !red_line)) +
+  facet_wrap(~ cluster, labeller = labeller(cluster = label)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", formula = y ~ x, alpha = 0.4, fullrange = TRUE) +
+  labs(title="Job accessibility before and after Red Line",
+       x = "Weighted distance to job",
+       y = "Job accessibility") +
+  scale_color_discrete(name = "",
+                       labels = c("With Red Line", "Without Red Line"))
+```
+
+To show this distinction more clearly, we compute the average job accessibility across each of the datasets in the previous example as well as a "baseline" job accessibility. The baseline is computed to be the intercept of each of the regression lines above. This would correspond to the worst case job accessibility for a tract that has no job accessibility by driving. In fact, without the Red Line, this value comes out to be negative, so we take the maximum with zero to produce values that are contextually relevant.
+
+```{r td-rl-regression-tables}
+ja_df_data <- ja %>% 
+  group_by(cluster, red_line) %>% 
+  summarize(base = mean(gravity_sum_transit), .groups = "drop") %>% 
+  pivot_wider(names_from = red_line, values_from = base,
+              names_glue = "{ifelse(red_line, 'With Red Line', 'Without Red Line')}") %>% 
+  mutate(cluster = fct_recode(cluster,
+                              "Disadvantaged" = "0",
+                              "Non-disadvantaged" = "1")) %>% 
+  mutate(Increase = `With Red Line` - `Without Red Line`)
+
+intercepts = tribble(
+  ~cluster, ~`Without Red Line`, ~`With Red Line`,
+  "Disadvantaged", disadv_td_lm$coefficients[[1]], disadv_td_rl_lm$coefficients[[1]],
+  "Non-disadvantaged", non_disadv_td_lm$coefficients[[1]], non_disadv_td_rl_lm$coefficients[[1]]
+) %>% mutate(Increase = `With Red Line` - `Without Red Line`) %>% pmax(0)
+
+ja_df_data %>% 
+  gt(rowname_col= "cluster") %>% 
+  tab_header(
+    title = "Average job accessibility",
+    subtitle = "Restricted to Red Line service area"
+  ) %>% 
+  fmt_integer(
+    columns = everything(),
+    suffixing = TRUE
+  )
+
+intercepts %>% 
+  gt(rowname_col= "cluster") %>% 
+  tab_header(
+    title = "\"Baseline\" job accessibility",
+    subtitle = "Restricted to Red Line service area"
+  ) %>% 
+  fmt_integer(
+    columns = everything(),
+    suffixing = TRUE
+  )
+```
+
+# Appendix A: Why compare transit at 70 minutes and driving at 10 minutes?
+
+We begin by standard scaled versions of the job accessibilities for each mode of transit and each threshold separately. We will better be able to compare distributions this way.
+
+```{r load-scaled-ja, results="hide"}
+
+load_scaled_ja <- function(thresh, mode, dir) {
+  # This will load and scale (mean 0, variance 1) a list job accessibilities
+  # from the given directory dir with the threshold thresh. These values will 
+  # also be tagged with the given threshold and mode of transportation.
+  read_csv(str_glue("{dir}/{thresh}.csv"), show_col_types = FALSE) %>%
+    transmute(FIPS = tract_id, mode = mode,
+              threshold = thresh, gravity_sum = scale(gravity_sum))
+}
+
+# Load all of the job accessibilities in transit_dir and drive_dir
+transit_scaled_ja <- as.character(transit_threshes) %>%
+  map(load_scaled_ja, mode = "transit", dir = transit_dir)
+drive_scaled_ja <- as.character(drive_threshes) %>%
+  map(load_scaled_ja, mode = "drive", dir = drive_dir)
+
+# Join (matching by FIPS) them all into one data frame
+all_scaled_ja <- bind_rows(transit_scaled_ja, drive_scaled_ja) %>% 
+  mutate(mode = factor(mode, c("transit", "drive")),
+         threshold = factor(threshold, transit_threshes))
+```
+
+When we look at the distribution of job accessibilities across all thresholds, we see a distinct pattern: as the threshold increases, the data skews more towards higher job accessibilities. However, this happens at different thresholds for transit versus driving. In particular, we see that the transit job accessibilities stay skewed towards low values for more thresholds (up until about 45 minutes). Eventually this skew passes to a bimodal distribution (from about 45 minutes to 140 minutes), and finally a higher skewed distribution (after 140 minutes). This shift happens across much fewer thresholds when driving is considered (from approximately 5 to 30 minutes).
+
+```{r plot-all-histograms, fig.height=50, fig.width=2}
+ggplot(data = all_scaled_ja, mapping = aes(x = gravity_sum)) +
+  geom_histogram(bins = 30) +
+  facet_grid(threshold ~ mode, scales = "free")
+```
+
+Our goal in the regression analysis above was to try to find if SVI had much impact on job accessibility using transit, or if it was primarily driven by job accessibility by driving (and therefore, effectively distance to the job). In order to check this most fairly, we would want to make sure that the regression of transit job accessibility versus driving job accessibility is as accurate as we can. Thus, we can try to match up which thresholds have similar job accessibility distributions for transit vs driving.
+
+We use the [Kolmogorov-Smirnov (KS) test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) to help quantify which sample distributions appear to be most similar. Since the p-value given by the traditional KS test relates to the null hypothesis that the samples are drawn from the same distribution, we are actually most interested in higher p-values in our application.
+
+```{r ks-test, results='hide', warning=FALSE}
+ks_p_value <- function(t_thresh, d_thresh, data){
+  # Compute the Kolmogorov-Smirnov test p-value for the distributions of 
+  # job accessibilities at given transit and driving thresholds
+  k = ks.test(
+    data %>%
+      filter(threshold == t_thresh, mode == "transit") %>%
+      .$gravity_sum,  # Get the desired transit gravity sums as vector
+    data %>%
+      filter(threshold == d_thresh, mode == "drive") %>%
+      .$gravity_sum # Get the desired driving gravity sums as vector
+  )
+  as_tibble_row(list(transit_thresh = t_thresh,
+                     drive_thresh = d_thresh,
+                     ks_p = k$p.value))
+}
+
+# Run the KS test across every combination of driving and transit thresholds
+threshes <- expand.grid(as.character(transit_threshes),
+                        as.character(drive_threshes))
+names(threshes) = c("t_thresh", "d_thresh")
+
+ks <- threshes %>% pmap_dfr(ks_p_value, data = all_scaled_ja)
+```
+
+Below, we depict the p-values using a heat map. Higher p-values (therefore brighter spots) correspond to the thresholds where job accessibility distributions for transit and driving look similar.
+
+```{r ks-heatmap}
+ggplot(data = ks, mapping = aes(x = drive_thresh, y = transit_thresh,
+                                fill = ks_p)) +
+  geom_raster() +
+  xlab("Drive thresholds") +
+  ylab("Transit thresholds") +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+To better visualize, for each transit threshold, we depict the distribution of job accessibilities versus the driving distribution with the highest KS p-value. We start to see relatively good matches around the 55 minute threshold for transit job accessibility.
+
+```{r best-histogram-matches, fig.ncol = 4, out.width = '.23\\linewidth'}
+compare_hist <- function(t_thresh, d_thresh, ks_p, data) {
+  # Draw a transit and driving job accessibility distribution side-by-side for 
+  # the given threshold. The plot will be labeled with the given p-value.
+  plot_data <- data %>% 
+    filter((threshold == t_thresh) & (mode == "transit") |
+             (threshold == d_thresh) & (mode == "drive"))
+    g = ggplot(data = plot_data, mapping = aes(gravity_sum)) +
+      geom_histogram(bins = 30) +
+      facet_wrap(~mode) +
+      labs(title = str_glue("KS p-value = {round(ks_p, 3)} for transit threshold {t_thresh} and drive threshold {d_thresh}"), x = "normalized job accessibility", y = "number of tracts")
+    print(g)
+}
+
+ks %>%
+  group_by(transit_thresh) %>% 
+  summarize(idx = which.max(ks_p), drive_thresh = drive_thresh[[idx]],
+            ks_p = ks_p[[idx]]) %>% 
+  select(t_thresh = transit_thresh, d_thresh = drive_thresh, ks_p = ks_p) %>% 
+  pwalk(compare_hist, data = all_scaled_ja)
+```
+
+Now that we know which thresholds result in similar job accessibility distributions when taking transit or driving, we can perform a similar analysis using regression. The previous analysis tells us that the overall distributions can be made similar, but the regression will tell us when the job accessibility are related on a tract by tract basis.
+
+We return to using the non-standardized data.
+
+```{r load-non-scaled-data, results="hide"}
+
+load_ja <- function(thresh, mode, dir) {
+  # This will load a list of job accessibilities from the given directory dir 
+  # with the threshold thresh. These values will also be tagged with the given 
+  # threshold and mode of transportation.
+  read_csv(str_glue("{dir}/{thresh}.csv"), show_col_types = FALSE) %>%
+    transmute(FIPS = tract_id, mode = mode,
+              threshold = thresh, gravity_sum = gravity_sum)
+}
+
+# Load all of the job accessibilities in transit_dir and drive_dir
+transit_ja <- as.character(transit_threshes) %>%
+  map(load_ja, mode = "transit", dir = transit_dir)
+drive_ja <- as.character(drive_threshes) %>%
+  map(load_ja, mode = "drive", dir = drive_dir)
+
+# Join (matching by FIPS) them all into one data frame
+all_ja <- bind_rows(transit_ja, drive_ja) %>% 
+  mutate(mode = factor(mode, c("transit", "drive")),
+         threshold = factor(threshold, as.character(transit_threshes)))
+```
+
+For each transit threshold, we perform a linear regression of the job accessibility against the job accessibility when driving at each possible driving threshold. From here, we look at two values using a heatmap as above: the $r^2$ and the slope of the regression line.
+
+```{r regression-calculations}
+regression <- function(t_thresh, d_thresh, data){
+  # Perform a regression of job accessibility at the given transit threshold 
+  # versus job accessibility at the given driving threshold
+  regression_data <- data %>% 
+    filter((mode == "transit" & threshold == t_thresh) |
+           (mode == "drive" & threshold == d_thresh)) %>%
+    pivot_wider(FIPS, names_from = mode, values_from = gravity_sum, 
+                names_glue = "gravity_sum_{mode}")
+  summ <- summary(lm(gravity_sum_transit ~ gravity_sum_drive,
+                  data = regression_data))
+  as_tibble_row(
+    list(t_thresh = t_thresh,
+      d_thresh = d_thresh,
+      intercept = summ$coefficients[[1]],
+      slope = summ$coefficients[[2]],
+      r_sq = summ$adj.r.squared),
+    )
+}
+
+# Run the regression across every combination of driving and transit thresholds
+threshes <- expand.grid(transit_threshes, drive_threshes)
+names(threshes) = c("t_thresh", "d_thresh")
+
+regressions <- threshes %>% pmap_dfr(regression, data = all_ja)
+```
+
+The heatmaps show the $r^2$ values, and the (negative) distance of the slope from 1. Thus, the areas which are bright on the heatmaps show good fits that are close to having a slope of 1. Note that those areas which are bright on both heatmaps are also bright on the KS p-value heatmap above.
+
+```{r regression-heatmap}
+ggplot(data = regressions, mapping = aes(x = d_thresh, y = t_thresh,
+                                fill = r_sq)) +
+  geom_raster() +
+  labs(x = "Drive Thresholds", y = "Transit thresholds", fill = "r^2") +
+  theme(axis.text.x = element_text(angle = 45))
+ggplot(data = regressions, mapping = aes(x = d_thresh, y = t_thresh,
+                                fill = -abs(1 - slope))) +
+  geom_raster() +
+  labs(x = "Drive Thresholds", y = "Transit thresholds", 
+       fill = "-abs(1 - Slope)") +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r plot-best-regressions, fig.ncol = 4, out.width = '.23\\linewidth'}
+draw_regression <- function(t_thresh, d_thresh, intercept, slope, r_sq, data) {
+  # Draw a transit and driving job accessibility distribution side-by-side for 
+  # the given threshold. The plot will be labeled with the given p-value.
+  regression_data <- data %>% 
+    filter((mode == "transit" & threshold == t_thresh) |
+           (mode == "drive" & threshold == d_thresh)) %>%
+    pivot_wider(FIPS, names_from = mode, values_from = gravity_sum, 
+                names_glue = "gravity_sum_{mode}")
+  g = ggplot(data = regression_data, 
+             mapping = aes(gravity_sum_transit, gravity_sum_drive)) +
+    geom_point() +
+    geom_smooth(method = "lm", formula = y ~ x) +
+    labs(title = str_glue("Intercept = {round(intercept, 2)}, slope = {round(slope, 2)}, r^2 = {round(r_sq, 3)}"),
+         x = str_glue("Driving job accessibility at threshold {d_thresh}"),
+         y = str_glue("Transit job accessibility at threshold {t_thresh}"),
+         y = "number of tracts")
+  print(g)
+}
+
+regressions %>%
+  group_by(t_thresh) %>% 
+  summarize(idx = which.max(r_sq), d_thresh = d_thresh[[idx]],
+            intercept = intercept[[idx]], slope = slope[[idx]], 
+            r_sq = r_sq[[idx]]) %>% 
+  select(-idx) %>% 
+  pwalk(draw_regression, data = all_ja)
+```
+
+After qualtitative inspection, we observe a few respective pairs of transit thresholds and driving thresholds that produce similar distributions with strong linear correlations:
+
+-   70 and 10
+-   105 and 15
+-   155 and 25
+
+The distributions for the 70, 10 pair are somewhat bimodal, but mostly skewed towards low accessibility. The 105, 15 pair is bimodal and more balanced, wheras the 155, 25 pair is skewed towards higher accessibility.
+
+Since we are interested in areas with low access to transit, we use the 70, 10 pair. Additionally, 70 minutes is a more reasonable transit time compared to 105 and 155 minutes.
+
+# Appendix B: Better regressions on bimodal distributions
+
+As we saw in the distributions of job accessibility, the data is often bimodal. This is due to the fact that there are two groups of regions: those that are generally close to many jobs, and those that are further.
+
+We load two data sets that are bimodal and have an okay linear regression fit.
+
+```{r original-regression}
+library(interactions)
+set.seed(74)
+
+t_thresh = "90"
+d_thresh = "10"
+
+ja <- all_ja %>% 
+  filter((mode == "transit" & threshold == t_thresh) |
+           (mode == "drive" & threshold == d_thresh)) %>% 
+  pivot_wider(FIPS, names_from = mode, values_from = gravity_sum, 
+              names_glue = "gravity_sum_{mode}")
+
+td_lm = lm(gravity_sum_transit ~ gravity_sum_drive, 
+              data = ja)
+
+summary(td_lm)
+```
+
+However, now we use $k$-means clustering to split the data into areas where transit job accessibility is low, and transit job accessibility is high.
+
+```{r compute-job-accessibility-clusters}
+ja_cluster <- ja %>% 
+  mutate(transit_cluster = as.factor(kmeans(gravity_sum_transit, 2)$cluster))
+```
+
+Adding an interaction term on this clustering factor allows for a much better fit.
+
+```{r clustered-regression}
+td_cluster_lm = lm(gravity_sum_transit ~ gravity_sum_drive * transit_cluster, 
+              data = ja_cluster)
+
+summary(td_cluster_lm)
+
+interact_plot(td_cluster_lm, pred = gravity_sum_drive, modx = transit_cluster,
+              plot.points = TRUE, points.alpha = 0.4)
+```
+
+This is a route that may be interesting to explore in the future, however, to keep things simple and more interpretable, we don't use any categorical interactions in the previously analyzed regressions (but these were seen to have pretty good fits anyways).

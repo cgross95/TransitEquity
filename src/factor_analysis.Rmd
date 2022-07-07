@@ -1,0 +1,51 @@
+---
+title: "Factor Analysis"
+author: "Transit Equity Team"
+date: '2022-06-14'
+output: html_document
+---
+
+Load SVI data.
+
+```{r load-data,message=FALSE}
+#setwd('set your directory to /TransitEquity/')
+library(readr)
+library(dplyr)
+svi_pt <- read_csv("../processed_data/SVI_PT.csv")
+# Replace SVI variable names with more descriptive names
+svi_pt <- select(svi_pt, !FIPS) %>% 
+  rename(`Total population` = E_TOTPOP)%>% 
+  rename(`Below poverty` = E_POV)%>% 
+  rename(`Unemployed` = E_UNEMP)%>% 
+  rename(`Income` = E_PCI)%>% 
+  rename(`No high school diploma` = E_NOHSDP)%>% 
+  rename(`Aged 65 or older` = E_AGE65)%>% 
+  rename(`Aged 17 or younger` = E_AGE17)%>% 
+  rename(`Civilian with a disability` = E_DISABL)%>% 
+  rename(`Single-parent households` = E_SNGPNT) %>% 
+  rename(`Minority` = E_MINRTY)%>% 
+  rename(`Multi-unit structures` = E_MUNIT)%>% 
+  rename(`No vehicle` = E_NOVEH)%>% 
+  rename(`No health insurance` = E_UNINSUR)%>% 
+  rename(`Total daytime population` = E_DAYPOP)
+```
+
+Decide the number of factors. It looks like we shall choose 2 factors.
+
+```{r scree-plot, message=FALSE}
+library(psych)
+
+correlations <- cor(svi_pt)
+
+fa.parallel(correlations, n.obs=nrow(svi_pt), fa="both", n.iter=100,
+            main="Scree plot with parallel analysis")
+```
+
+Factor analysis. We observe that the first factor drives socio-economic indicators, while the second factor drives population. For cluster analysis, we restrict our attention to the first factor, since this is more related to job accessibility.
+
+```{r factor, fig.width=8, fig.height=8, message=FALSE}
+n_factors = 2
+fa.analysis <- fa(correlations, nfactors = n_factors, n.obs = nrow(correlations), fm = "pa")
+factor.plot(fa.analysis, labels=rownames(fa.analysis$loadings))
+fa.diagram(fa.analysis)
+```
