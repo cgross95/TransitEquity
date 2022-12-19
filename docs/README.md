@@ -2,7 +2,7 @@
 
 This is a listing of the steps to reproduce all analyses
 
-1. [Data preprocessing](README.md)  [(source in Python)](../src/preprocessing_2018svi_ep.ipnyb)
+1. [Data preprocessing](README.md)  [(source in Python)](../src/preprocessing_2018svi_ep.ipynb)
 2. [EDA of SVI data](README.md)  [(source in Python)](../README.md)
 3. [Factor analysis of SVI data](README.md)  [(source in R)](../src/factor_analysis.Rmd)
 4. [Clustering](README.md)  [(source in Python)](../README.md)
