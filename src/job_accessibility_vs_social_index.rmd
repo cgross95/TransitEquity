@@ -1,0 +1,74 @@
+---
+title: "Job Accessibility Regression Analysis"
+author: "Transit Equity Team"
+date: '2022-06-13'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Loading data
+
+```{r libraries, message=FALSE}
+library(tidyverse)
+library(modelr)
+library(gt)
+```
+
+We begin by loading all of the job accessibility data computed at various thresholds (i.e., what is someone's job accessibility when they're willing to travel via car/transit/transit-with-Red-Line for the stated length of time?).
+
+```{r find-directories}
+#setwd('set your directory to /TransitEquity/')
+data_dir <- "../processed_data/job_accessibility"
+transit_dir <- str_glue("{data_dir}/transit_old")
+transit_files <- list.files(transit_dir, pattern = "*.csv")
+red_line_dir <- str_glue("{data_dir}/transit_new")
+red_line_files <- list.files(red_line_dir, pattern = "*.csv")
+
+transit_threshes <- transit_files %>% 
+  map_chr(str_remove_all, ".csv") %>% 
+  map_dbl(as.double) %>% 
+  sort() %>% 
+  as_factor()
+
+red_line_threshes <- red_line_files %>% 
+  map_chr(str_remove_all, ".csv") %>% 
+  map_dbl(as.double) %>% 
+  sort() %>% 
+  as_factor()
+```
+
+```{r load-job-accessibilities}
+load_ja <- function(thresh, mode, dir) {
+  # This will load a list of job accessibilities from the given directory dir 
+  # with the threshold thresh. These values will be tagged with the given 
+  # threshold, and mode of transportation.
+  read_csv(str_glue("{dir}/{thresh}.csv"), show_col_types = FALSE) %>%
+    transmute(FIPS = tract_id, mode = mode,
+              threshold = thresh, gravity_sum = gravity)
+}
+
+# Load all of the job accessibilities in transit_dir, red_line_dir
+transit <- transit_threshes %>%
+  map(load_ja, mode = "transit", dir = transit_dir)
+red_line <- red_line_threshes %>%
+  map(load_ja, mode = "red_line", dir = red_line_dir)
+
+# Join (matching by FIPS) them all into one data frame
+all_ja <- bind_rows(transit, red_line) %>% 
+  mutate(mode = factor(mode, c("transit", "red_line")))
+```
+
+
+```{r load-svi}
+svi <- read_csv("../processed_data/SVI_EP_Standard_Scaled_Summary_Index.csv", 
+    col_types = cols_only(FIPS = "d", 
+        svi_socioecon_summary = "d"))
+all_ja <- all_ja %>% left_join(svi)
+```
+```{r plots}
+ggplot(data = all_ja, mapping = aes(svi_socioecon_summary, gravity_sum)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", formula = "y ~ x") +
+  facet_grid(mode ~ threshold)
+```
