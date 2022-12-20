@@ -25,7 +25,7 @@ df = job_totals_tract.merge(travel_time, left_on="tract_id", right_on="dest")
 df.drop("tract_id", axis=1, inplace=True)
 df["tract_id"] = df["origin"].astype(str)
 
-min_thresh = 45
+min_thresh = 15
 max_thresh = 90
 thresh_step = 15
 
