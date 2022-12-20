@@ -22,7 +22,7 @@ We begin by loading all of the job accessibility data computed at various thresh
 data_dir <- "../processed_data/job_accessibility"
 transit_dir <- str_glue("{data_dir}/transit_old")
 transit_files <- list.files(transit_dir, pattern = "*.csv")
-red_line_dir <- str_glue("{data_dir}/transit_new")
+red_line_dir <- str_glue("{data_dir}/transit_min")
 red_line_files <- list.files(red_line_dir, pattern = "*.csv")
 
 transit_threshes <- transit_files %>% 
@@ -65,10 +65,46 @@ svi <- read_csv("../processed_data/SVI_EP_Standard_Scaled_Summary_Index.csv",
     col_types = cols_only(FIPS = "d", 
         svi_socioecon_summary = "d"))
 all_ja <- all_ja %>% left_join(svi)
+(all_ja %>% filter(is.na(svi_socioecon_summary)))
 ```
-```{r plots}
+```{r job-accessibility-plots}
 ggplot(data = all_ja, mapping = aes(svi_socioecon_summary, gravity_sum)) +
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", formula = "y ~ x") +
   facet_grid(mode ~ threshold)
 ```
+
+We can also compare our SVI indicator against average travel times.
+
+```{r load-average-travel-time}
+transit_time <- read_csv("../processed_data/transit_time_data.csv", 
+  col_types = cols(...1 = col_skip()))
+job_flows <- read_csv("../processed_data/job_flows_tract.csv", 
+                      show_col_types = FALSE)
+
+transit_time <- transit_time %>%
+  left_join(job_flows, 
+            by = c("origin_tract_id" = "h_geocode", 
+                   "destination_tract_id" = "w_geocode")) %>% 
+  mutate(job_totals = replace_na(job_totals, 0))
+
+transit_time <- transit_time %>% 
+group_by(origin_tract_id) %>% 
+  mutate(
+    flow_proportion = job_totals / sum(job_totals)) %>%
+  summarize(
+    transit = sum(TransitTimeOld * flow_proportion),
+    red_line = sum(min * flow_proportion)) %>%
+    pivot_longer(c("transit", "red_line"), names_to = "mode",
+               values_to = "average_transit_time")
+transit_time <- svi %>% inner_join(transit_time, by = c("FIPS" = "origin_tract_id"))
+```
+
+```{r transit-time-plots}
+ggplot(data = transit_time, 
+       mapping = aes(svi_socioecon_summary, average_transit_time)) +
+  geom_point(alpha = 0.4) +
+geom_smooth(method = "lm", formula = "y ~ x") +
+  facet_grid(. ~ mode)
+```
+
