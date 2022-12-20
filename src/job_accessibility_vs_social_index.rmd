@@ -95,8 +95,8 @@ group_by(origin_tract_id) %>%
   summarize(
     transit = sum(TransitTimeOld * flow_proportion),
     red_line = sum(min * flow_proportion)) %>%
-    pivot_longer(c("transit", "red_line"), names_to = "mode",
-               values_to = "average_transit_time")
+    pivot_longer(c("transit", "red_line"), names_to = "mode", 
+                 values_to = "average_transit_time")
 transit_time <- svi %>% inner_join(transit_time, by = c("FIPS" = "origin_tract_id"))
 ```
 
