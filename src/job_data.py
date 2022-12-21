@@ -23,6 +23,7 @@ def compute_job_flow(seg = "S000", year = '2019'):
         job_data = restrict_to_Baltimore(job_data, 'w_geocode')
 
         job_data = job_data.groupby(['h_geocode', 'w_geocode']).sum().reset_index()
+        job_data = job_data.loc[job_data["job_totals"] != 0]
         job_data.to_csv(job_flow_file, index=False)
     
     job_data = pd.read_csv(job_flow_file)
@@ -44,6 +45,7 @@ def compute_job_totals(seg = "S000", year = '2019'):
 
         job_data = job_data[["tract_id", "job_totals"]]
         job_data = job_data.groupby("tract_id").sum().reset_index()
+        job_data = job_data.loc[job_data["job_totals"] != 0]
         job_data.to_csv(job_totals_file, index=False)
         job_data = replace_tracts(job_data)
     
