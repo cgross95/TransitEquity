@@ -13,9 +13,12 @@ time_col = dict(zip(modes, cols))
 
 def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed):
 
+    job_totals['tract_id'] = FIPS_to_str(job_totals, 'tract_id')
+    travel_time['dest'] = FIPS_to_str(travel_time, 'dest')
     df = job_totals.merge(travel_time, left_on="tract_id", right_on="dest")
 
-    df.drop("origin", axis=1, inplace=True)
+    df.drop("tract_id", axis=1, inplace=True)
+    df.rename(columns={"origin": "tract_id",}, inplace=True)
 
     min_thresh = 15
     max_thresh = 90
