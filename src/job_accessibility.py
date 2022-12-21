@@ -30,7 +30,7 @@ def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed)
 
             final_df = below_df[['tract_id', 'job_totals', 'gravity']].groupby('tract_id').sum()
 
-            dir_path = processed_path + f"job_accessibility_{seg}_{int(assumed_train_speed)}/{mode}"
+            dir_path = processed_path + f"job_accessibility/{seg}/{int(assumed_train_speed)}/{mode}"
 
             os.makedirs(dir_path, exist_ok=True)
 
