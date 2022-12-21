@@ -15,7 +15,7 @@ library(modelr)
 library(gt)
 ```
 
-We begin by loading all of the job accessibility data computed at various thresholds (i.e., what is someone's job accessibility when they're willing to travel via car/transit/transit-with-Red-Line for the stated length of time?).
+We begin by loading all of the job accessibility data computed at various thresholds (i.e., what is someone's job accessibility when they're willing to travel via transit (with or without the Red Line) for the stated length of time?).
 
 ```{r find-directories}
 #setwd('set your directory to /TransitEquity/')
@@ -57,7 +57,16 @@ red_line <- red_line_threshes %>%
 # Join (matching by FIPS) them all into one data frame
 all_ja <- bind_rows(transit, red_line) %>% 
   mutate(mode = factor(mode, c("transit", "red_line")))
+
+# Compute the percent change
+all_ja <- all_ja %>% 
+  pivot_wider(names_from = mode, values_from = gravity_sum) %>% 
+  mutate(difference = (red_line - transit) / transit) %>% 
+  pivot_longer(c("transit", "red_line", "difference"), 
+               names_to = "mode", values_to = "gravity_sum")
 ```
+
+These tracts are in the red-line service area (i.e., 15 minute walk from a red line stop). In future analyses we will filter by these FIPS codes.
 
 ```{r}
 service_area <- c("24510280404",
@@ -101,20 +110,26 @@ service_area <- c("24510280404",
 "24510261100",
 "24510220100",
 "24510010100")
+
+all_ja <- all_ja %>% mutate(service_area = FIPS %in% service_area)
 ```
+
+Now we will join the job accessibility with the computed socioeconomic index. We also tag those FIPS that have below-mean indices.
 
 ```{r load-svi}
 svi <- read_csv("../processed_data/SVI_EP_2020_Standard_Scaled_Summary_Index.csv", 
     col_types = cols_only(FIPS = "d", 
       svi_socioecon_summary = "d"))
-all_ja <- svi %>% left_join(all_ja) %>% 
+all_ja <- svi %>% left_join(all_ja, by = "FIPS") %>% 
   mutate(disadvantaged = svi_socioecon_summary < 0)
 ```
 
 ```{r}
-all_ja <- all_ja %>% pivot_wider(names_from = mode, values_from = gravity_sum) %>% 
+all_ja <- all_ja %>% 
+  pivot_wider(names_from = mode, values_from = gravity_sum) %>% 
   mutate(difference = (red_line - transit) / transit) %>% 
-  pivot_longer(c("transit", "red_line", "difference"), names_to = "mode", values_to = "gravity_sum") %>% 
+  pivot_longer(c("transit", "red_line", "difference"), 
+               names_to = "mode", values_to = "gravity_sum") %>% 
   filter(FIPS %in% service_area)
 ```
 
