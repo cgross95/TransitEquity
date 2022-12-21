@@ -25,10 +25,6 @@ def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed)
     for mode in modes:
         for thresh in range(min_thresh, max_thresh + thresh_step, thresh_step):
             below_df = df[df[time_col[mode]] <= thresh].copy()
-            print(mode)
-            print(below_df.head())
-            print(time_col[mode])
-            print(below_df[time_col[mode]].head())
             below_df["gravity"] = below_df[time_col[mode]].apply(lambda t: impedance(t, thresh))
             below_df["gravity"] = below_df["gravity"] * below_df["job_totals"]
 
