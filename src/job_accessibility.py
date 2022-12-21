@@ -13,8 +13,6 @@ time_col = dict(zip(modes, cols))
 
 def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed):
 
-    job_totals['tract_id'] = FIPS_to_str(job_totals, 'tract_id')
-    travel_time['dest'] = FIPS_to_str(travel_time, 'dest')
     df = job_totals.merge(travel_time, left_on="tract_id", right_on="dest")
 
     df.drop("tract_id", axis=1, inplace=True)
@@ -32,10 +30,9 @@ def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed)
 
             final_df = below_df[['tract_id', 'job_totals', 'gravity']].groupby('tract_id').sum()
 
-            file_path = processed_path + f"job_accessibility_{seg}_{assumed_train_speed}/{mode}"
+            dir_path = processed_path + f"job_accessibility_{seg}_{int(assumed_train_speed)}/{mode}"
 
-            os.makedirs(
-                    file_path, exist_ok=True)
+            os.makedirs(dir_path, exist_ok=True)
 
             final_df.to_csv(
-                    f".{file_path}/{int(thresh)}.csv")
+                    f"{dir_path}/{int(thresh)}.csv")

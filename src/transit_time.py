@@ -63,10 +63,8 @@ def preprocessing():
 
 
 def compute_transit_time(assumed_train_speed = 20):
-    transit_time_file = processed_path + f"transit_time_data_speed_{assumed_train_speed}.csv"
-    if os.path.isfile(transit_time_file):
-        final = pd.read_csv(transit_time_file)
-    else:
+    transit_time_file = processed_path + f"transit_time_data_speed_{int(assumed_train_speed)}.csv"
+    if not os.path.isfile(transit_time_file):
         walks, segments, transit, gtfs, stop_num = preprocessing()
         segments['minutes'] = (segments['mileage'] / assumed_train_speed) * 60
         segments = segments[['origin', 'dest', 'minutes']]
@@ -90,4 +88,6 @@ def compute_transit_time(assumed_train_speed = 20):
         final = final.groupby(['origin','dest']).mean()
         final.rename(columns={"TransitTime (minutes)": "transit_time_current", 'minutes': 'transit_time_with_red_line'}, inplace=True)
         final.to_csv(transit_time_file)
+        
+    final = pd.read_csv(transit_time_file)
     return final
