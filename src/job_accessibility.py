@@ -34,5 +34,4 @@ def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed)
 
             os.makedirs(dir_path, exist_ok=True)
 
-            final_df.to_csv(
-                    f"{dir_path}/{int(thresh)}.csv")
+            final_df.to_csv(f"{dir_path}/{int(thresh)}.csv")
