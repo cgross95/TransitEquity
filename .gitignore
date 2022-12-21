@@ -1,0 +1,6 @@
+.ipynb_checkpoints
+__pycache__
+processed_data
+.Rhistory
+raw_data/md_od_main_JT00_2019.csv
+raw_data/md_wac_S000_JT00_2019.csv
