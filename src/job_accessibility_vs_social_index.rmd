@@ -17,9 +17,15 @@ library(gt)
 
 We begin by loading all of the job accessibility data computed at various thresholds (i.e., what is someone's job accessibility when they're willing to travel via transit (with or without the Red Line) for the stated length of time?).
 
+```{r}
+seg <- "SE01"
+speed <- "25"
+```
+
+
 ```{r find-directories}
 #setwd('set your directory to /TransitEquity/')
-data_dir <- "../processed_data/job_accessibility"
+data_dir <- str_glue("../processed_data/job_accessibility_{seg}_{speed}")
 transit_dir <- str_glue("{data_dir}/transit_current")
 transit_files <- list.files(transit_dir, pattern = "*.csv")
 red_line_dir <- str_glue("{data_dir}/red_line")
@@ -58,11 +64,12 @@ red_line <- red_line_threshes %>%
 all_ja <- bind_rows(transit, red_line) %>% 
   mutate(mode = factor(mode, c("transit", "red_line")))
 
-# Compute the percent change
+# Compute the change
 all_ja <- all_ja %>% 
   pivot_wider(names_from = mode, values_from = gravity_sum) %>% 
-  mutate(difference = (red_line - transit) / transit) %>% 
-  pivot_longer(c("transit", "red_line", "difference"), 
+  mutate(difference = red_line - transit,
+         pct_difference = difference / transit) %>% 
+  pivot_longer(c("transit", "red_line", "difference", "pct_difference"), 
                names_to = "mode", values_to = "gravity_sum")
 ```
 
@@ -114,53 +121,63 @@ service_area <- c("24510280404",
 all_ja <- all_ja %>% mutate(service_area = FIPS %in% service_area)
 ```
 
-Now we will join the job accessibility with the computed socioeconomic index. We also tag those FIPS that have below-mean indices.
+Now we will join the job accessibility with the computed socioeconomic index. This is computed by summing all socioeconomic SVI indicators except for percentage of uninsured persons. We also tag those FIPS that have below-mean indices.
 
 ```{r load-svi}
 svi <- read_csv("../processed_data/SVI_EP_2020_Standard_Scaled_Summary_Index.csv", 
     col_types = cols_only(FIPS = "d", 
-      svi_socioecon_summary = "d"))
-all_ja <- svi %>% left_join(all_ja, by = "FIPS") %>% 
-  mutate(disadvantaged = svi_socioecon_summary < 0)
+      svi_socioecon_summary = "d")) %>% 
+    mutate(disadvantaged = svi_socioecon_summary < 0)
+svi_ja <- svi %>% left_join(all_ja, by = "FIPS")
 ```
 
-```{r}
-all_ja <- all_ja %>% 
-  pivot_wider(names_from = mode, values_from = gravity_sum) %>% 
-  mutate(difference = (red_line - transit) / transit) %>% 
-  pivot_longer(c("transit", "red_line", "difference"), 
-               names_to = "mode", values_to = "gravity_sum") %>% 
-  filter(FIPS %in% service_area)
-```
+# Plot results
+
+We first show the change in job accessibility at different thresholds.
 
 ```{r job-accessibility-plots}
-ggplot(data = all_ja, mapping = aes(svi_socioecon_summary, gravity_sum)) +
-geom_point(alpha = 0.4) +
+ggplot(data = svi_ja %>% filter(threshold == 45, mode %in% c("red_line", "transit"), service_area == TRUE), mapping = aes(svi_socioecon_summary, gravity_sum)) +
+  geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", formula = "y ~ x") +
   facet_grid(mode ~ threshold)
 ```
-```{r}
-ggplot(data = all_ja, mapping = aes(gravity_sum)) +
-  geom_histogram()+
+```{r job-accessibility-plots}
+ggplot(data = svi_ja %>% filter(mode == "pct_difference"), mapping = aes(svi_socioecon_summary, gravity_sum)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", formula = "y ~ x") +
   facet_grid(mode ~ threshold)
 ```
 
+```{r}
+ggplot(data = svi_ja, mapping = aes(gravity_sum)) +
+  geom_histogram()+
+  facet_grid(mode ~ threshold)
+```
+```{r}
+
+```
+
 
 ```{r}
-ggplot(data = all_ja %>% filter(threshold == 45, mode %in% c("transit", "red_line")), mapping = aes(x = mode, y = gravity_sum)) +
-  geom_boxplot()
+svi_ja %>% filter(mode %in% c("transit", "red_line"), service_area == TRUE, threshold == 60) %>%
+  ggplot(mapping = aes(x = mode, y = gravity_sum)) +
+  geom_boxplot() +
+  facet_grid(. ~ disadvantaged)
 ```
 
 ```{r}
-ggplot(data = all_ja %>% filter(threshold == 45, mode %in% c("difference")), mapping = aes(x = gravity_sum)) +
+ggplot(data = svi_ja %>% filter(threshold == 45, mode %in% c("difference")), mapping = aes(x = gravity_sum)) +
   geom_boxplot()
+```
+```{r}
+svi_ja %>% filter(threshold == 45, mode %in% c("difference"), gravity_sum > 20) 
 ```
 
 We can also compare our SVI indicator against average travel times.
 
 ```{r load-average-travel-time}
-transit_time <- read_csv("../processed_data/transit_time_data.csv")
-job_flows <- read_csv("../processed_data/job_flows_tract.csv", 
+transit_time <- read_csv(str_glue("../processed_data/transit_time_data_speed_{speed}.csv"), show_col_types = FALSE)
+job_flows <- read_csv(str_glue("../processed_data/job_flow_tract_{seg}.csv"), 
                       show_col_types = FALSE)
 
 transit_time <- transit_time %>%
@@ -176,41 +193,35 @@ group_by(origin) %>%
   summarize(
     transit = sum(transit_time_current * flow_proportion),
     red_line = sum(transit_time_with_red_line * flow_proportion)) %>%
-  mutate(difference = red_line - transit) %>% 
-  pivot_longer(c("transit", "red_line", "difference"), names_to = "mode", 
+  mutate(difference = red_line - transit,
+         pct_difference = difference / transit) %>% 
+  pivot_longer(c("transit", "red_line", "difference", "pct_difference"),
+               names_to = "mode", 
                values_to = "average_transit_time")
-transit_time <- svi %>% inner_join(transit_time, by = c("FIPS" = "origin")) %>% 
-mutate(disadvantaged = svi_socioecon_summary < 0) %>% 
-  filter(FIPS %in% service_area)
+svi_transit_time <- svi %>%
+  inner_join(transit_time, by = c("FIPS" = "origin")) %>% 
+  mutate(service_area = FIPS %in% service_area)
 ```
 
 ```{r transit-time-plots}
-ggplot(data = transit_time, 
+ggplot(data = svi_transit_time %>% filter(service_area == TRUE, mode %in% c("red_line", "transit")), 
      mapping = aes(svi_socioecon_summary, average_transit_time)) +
   geom_point(alpha = 0.4) +
 geom_smooth(method = "lm", formula = "y ~ x") +
   facet_grid(. ~ mode)
 ```
-```{r}
-ggplot(data = transit_time %>% filter(mode == "difference"), mapping = aes(x = disadvantaged, y = average_transit_time)) +
-  geom_boxplot()
+```{r transit-time-plots}
+ggplot(data = svi_transit_time %>% filter(mode %in% c("difference")), 
+     mapping = aes(svi_socioecon_summary, average_transit_time)) +
+  geom_point(alpha = 0.4) +
+geom_smooth(method = "lm", formula = "y ~ x") +
+  facet_grid(. ~ mode)
 ```
 
 ```{r}
-
-td_lm = lm(average_transit_time ~ svi_socioecon_summary + mode, 
-              data = transit_time %>% filter(mode %in% c("red_line", "transit")))
-summary(td_lm)
-td_lm = lm(average_transit_time ~ svi_socioecon_summary, 
-              data = transit_time %>% filter(mode %in% c("red_line")))
-summary(td_lm)
-td_lm = lm(average_transit_time ~ svi_socioecon_summary, 
-              data = transit_time %>% filter(mode %in% c("transit")))
-summary(td_lm)
+ggplot(data = svi_transit_time %>% filter(mode %in% c("pct_difference"), service_area == TRUE), 
+       mapping = aes(x = disadvantaged, y = average_transit_time)) +
+  geom_boxplot() 
+# +
+# facet_grid(service_area ~ .)
 ```
-```{r}
-td_lm = lm(average_transit_time ~ svi_socioecon_summary * mode, 
-              data = transit_time %>% filter(mode %in% c("red_line", "transit")))
-summary(td_lm)
-```
-
