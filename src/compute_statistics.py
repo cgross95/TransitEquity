@@ -13,6 +13,9 @@ parser.add_argument('--resimulate_red_line', action=argparse.BooleanOptionalActi
 parser.add_argument('--speed', type=float, default = 20, help='Speed of the Assumed Red Line; default is 20 mph')
 parser.add_argument('--period', type=float, default = 8, help='Service frequency; Default is 8 minutes')
 parser.add_argument('--svi2020', action='store_true', help='Use 2020 census data (otherwise 2018)')
+parser.add_argument('--thresh_min', type=int, default=15, help='Lowest commute threshold to consider')
+parser.add_argument('--thresh_max', type=int, default=90, help='Largest commute threshold to consider')
+parser.add_argument('--thresh_step', type=int, default=15, help='Step between commute thresholds')
 args = parser.parse_args()
 
 seg = args.seg
@@ -40,7 +43,7 @@ if resimulate_red_line == True:
 
 transit_time = compute_transit_time("gtfs_current.csv", f"gtfs_red_line_speed_{int(speed)}_period_{int(period)}.csv", 
     speed = speed, period = period)
-compute_job_accessibility(transit_time, job_totals, seg, speed)
+compute_job_accessibility(transit_time, job_totals, seg, speed, min_thresh=args.thresh_min, max_thresh=args.thresh_max, thresh_step=args.thresh_step)
 
 svi2020 = args.svi2020
 preprocess_svi_ep.preprocessing(svi2020)

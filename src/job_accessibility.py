@@ -11,16 +11,12 @@ modes = ['transit_current', 'red_line']
 cols = {'transit_time_current', 'transit_time_with_red_line'}
 time_col = {'transit_current': 'transit_time_current', 'red_line': 'transit_time_with_red_line'}
 
-def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed):
+def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed, min_thresh, max_thresh, thresh_step):
 
     df = job_totals.merge(travel_time, left_on="tract_id", right_on="dest")
 
     df.drop("tract_id", axis=1, inplace=True)
     df.rename(columns={"origin": "tract_id",}, inplace=True)
-
-    min_thresh = 15
-    max_thresh = 90
-    thresh_step = 15
 
     for mode in modes:
         for thresh in range(min_thresh, max_thresh + thresh_step, thresh_step):
