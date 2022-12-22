@@ -1,93 +1,89 @@
-import numpy as np
+import pandas as pd
+from utils import *
+
 import pandas as pd
 import geopandas as gpd
-import networkx as nx
-from utils import *
-import pickle
+import os, urllib, json, csv
+from tqdm import tqdm
+import numpy as np
 
-_, processed_path = set_paths()
+raw_path, processed_path = set_paths()
 
+def get_all_pair_transit_time(output_file, job_flow, tract_file = "2020_Gaz_tracts_24.txt", date = '11/01/2022', time = '08:00AM'):
+    output_path = processed_path + output_file
+    if not os.path.isfile(output_path):
+        year = tract_file[:4]
+        if not os.path.isfile(raw_path + tract_file):
+            url = f'https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{year}_Gazetteer/{tract_file}'
+            urllib.request.urlretrieve(url, raw_path + tract_file)
+        with open(raw_path + tract_file) as f:
+            tracts = pd.read_csv(f, delimiter='\s+')
+        f.close()
 
-def preprocessing():
-    processed_file = processed_path + "preprocessed_transit_time.pkl"
-    if os.path.isfile(processed_file):
-        walks, segments, transit, gtfs, stop_num = pickle.load(open(processed_file,'rb'))
-    else:
-        # walking time to red line stops
-        walks = pd.read_csv("../raw_data/walk_to_red_line.csv", index_col=False)
-        # red line stops
-        stops = pd.read_csv("../raw_data/red_line_stops_lookup.csv", index_col='id')
-        # red line segments
-        segments = gpd.read_file("../shape_files/red_line_segments.shp")
-        # commute time matrix
-        gtfs = pd.read_csv("../raw_data/GTFS_ODMatrix_TravelTime.csv")
+        tracts = tracts[['GEOID', 'INTPTLAT', 'INTPTLONG']]
+        # This is specific to maryland tracts
+        tracts.loc[1456,['INTPTLAT', 'INTPTLONG']] = [39.34673721019194, -76.68057889700162]
 
-
-        # walks = data for walking to the nearest red line stop  
-        walks['origin'] = (
-            walks['centroids_15min: STATEFP'].astype(str)
-            + walks['centroids_15min: COUNTYFP'].astype(str).str.pad(3, "left", "0")
-            + walks['centroids_15min: TRACTCE'].astype(str).str.pad(6, "left", "0")
-        )
-        walks.rename(
+        df = job_flow.merge(tracts, left_on="h_geocode", right_on="GEOID").merge(tracts, left_on="w_geocode", right_on="GEOID")
+        df.rename(
             columns={
-                "Near Layer: Name": "dest",
-                "Minimum Travel Time (Minutes)": "minutes",
+                "INTPTLAT_x": "start_lat",
+                "INTPTLONG_x": "start_lon",
+                "INTPTLAT_y": "end_lat",
+                "INTPTLONG_y": "end_lon",
             },
             inplace=True,
         )
-        walks = walks[['origin', 'dest', 'minutes']]
+        df = df[['h_geocode', 'w_geocode', 'job_totals', 'start_lat', 'start_lon', 'end_lat', 'end_lon']]
 
-        segments[['origin', 'dest']] = segments['OriginDest'].str.split(':', expand=True).astype(int)
-        segments = segments.loc[(segments['origin'] != 0) & (segments['dest'] != 0)]
+        df['Date'] = date
+        df['Time'] = time
+        df = df.drop_duplicates()
 
-        # stops = name and stop number for each stop of proposed route
-        stop_num = [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 18, 4, 15]
-        stops['stop_num'] = stop_num
-        stops = stops.set_index('Name').to_dict()['stop_num']
+        # Find all travel times via API calls
+        URL = 'http://localhost:8080/otp/routers/default/plan?'
 
-        walks.replace(stops, inplace=True)
+        outputFile = open(output_path, 'w')
+        writer = csv.writer(outputFile)
+        writer.writerow(['origin','dest','job_totals','start_lat','start_lon','end_lat', 'end_lon', 'Date', 'Time', 'minutes'])
 
-        gtfs["dest"] = extract_tract_FIPS(gtfs, "GeoID_Destination")
+        # Takes CSV input, creates URLs, stores data locally in row array
+        for _, d in tqdm(df.iterrows(), total=df.shape[0]):
+            params =  {'date'         : d['Date'],
+                    'time'            : d['Time'],
+                    'fromPlace'       : '%s,%s' % (d['start_lat'], d['start_lon']),
+                    'toPlace'         : '%s,%s' % (d['end_lat'], d['end_lon']),
+                    'numItineraries'  : 10}
+            req = urllib.request.Request(URL + urllib.parse.urlencode(params))
+            req.add_header('Accept', 'application/json')
 
-        gtfs["origin"] = extract_tract_FIPS(gtfs, "GoeID_Origin")
+            if(d['h_geocode'] == d['w_geocode']):
+                outrow = d.tolist() + [0]
+                writer.writerow(outrow)
+            else:
+                response = urllib.request.urlopen(req)
+                try :
+                    content = response.read()
+                    objs = json.loads(content)
+                    durations = [i['duration'] for i in objs['plan']['itineraries']]
+                    duration = np.min(durations)
+                    outrow = d.tolist() + [duration/60]
+                    writer.writerow(outrow)
+                except :
+                    print(d)
+                    print ('no itineraries')
+        outputFile.close()
 
-        gtfs = gtfs[["origin", "dest", "TransitTime (minutes)"]]
 
-        transit = gtfs.copy()
-        transit['minutes'] = transit["TransitTime (minutes)"]
-        transit = transit[["origin", "dest", "minutes"]]
-        pickle.dump((walks, segments, transit, gtfs, stop_num), open(processed_file, 'wb'))
-    return walks, segments, transit, gtfs, stop_num
-
-
-
-def compute_transit_time(assumed_train_speed = 20):
-    transit_time_file = processed_path + f"transit_time_data_speed_{int(assumed_train_speed)}.csv"
+def compute_transit_time(gtfs_current, gtfs_red_line, speed = 20, period = 8):
+    transit_time_file = processed_path + f"transit_time_data_speed_{int(speed)}_period_{int(period)}.csv"
     if not os.path.isfile(transit_time_file):
-        walks, segments, transit, gtfs, stop_num = preprocessing()
-        segments['minutes'] = (segments['mileage'] / assumed_train_speed) * 60
-        segments = segments[['origin', 'dest', 'minutes']]
+        current = pd.read_csv(f"{processed_path}{gtfs_current}")[['origin','dest','minutes']].rename(columns={"minutes": "transit_time_current"})
+        red_line = pd.read_csv(f"{processed_path}{gtfs_red_line}")[['origin','dest','minutes']].rename(columns={"minutes": "transit_time_with_red_line"})
 
-        # Compute all pairs shortest path
-        G=nx.from_pandas_edgelist(pd.concat([walks, segments, transit]), 'origin', 'dest', ['minutes'])
+        final = pd.merge(current, red_line, on=['origin','dest'])
 
-        path = dict(nx.all_pairs_bellman_ford_path_length(G, weight = 'minutes'))
-
-        distance = pd.DataFrame.from_dict(path)
-        distance = distance.drop(stop_num, axis=1).drop(stop_num, axis=0)
-
-        # Convert all pair shortest path matrix into data frame
-        long_form = distance.unstack()
-        long_form.index.rename(['origin', 'dest'], inplace=True)
-        long_form = long_form.to_frame('minutes').reset_index()
-
-        final = pd.merge(gtfs, long_form, on=['origin','dest'])
-        final = replace_tracts(final)
-        final = final[~((final['origin'] == "24510280600") & (final['dest'] == "24510280600") & (final['minutes'] > 0))]
-        final = final.groupby(['origin','dest']).mean()
-        final.rename(columns={"TransitTime (minutes)": "transit_time_current", 'minutes': 'transit_time_with_red_line'}, inplace=True)
-        final.to_csv(transit_time_file)
+        final.to_csv(transit_time_file, index = False)
         
     final = pd.read_csv(transit_time_file)
     return final
