@@ -3,6 +3,9 @@ __pycache__
 processed_data/job_*
 processed_data/transit_*
 processed_data/gtfs_
+processed_data/SVI_*
+processed_data/outliers
+processed_data/*.pkl
 .Rhistory
 .DS_Store
 raw_data/md_od_*
