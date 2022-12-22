@@ -1,6 +1,8 @@
 .ipynb_checkpoints
 __pycache__
-processed_data
+processed_data/job_*
+processed_data/transit_*
 .Rhistory
+.DS_Store
 raw_data/md_od_*
 raw_data/md_wac_*
