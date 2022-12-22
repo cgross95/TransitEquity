@@ -60,11 +60,13 @@ pwalk(df %>% select(segment) %>% unique(),
 pwalk(df %>% select(segment) %>% unique(),
       ~show(vs_svi(df,
                    average_commute_time,
+                   threshold_choice = 15,
                    seg_choice = ..1)))
 
 pwalk(df %>% select(segment) %>% unique(),
       ~show(vs_svi(df,
                    average_commute_time,
+                   threshold_choice = 15,
                    seg_choice = ..1,
                    mode_choice = "pct_difference")))
 ```
@@ -76,11 +78,11 @@ save_outlier_tracts <- function(var, segment_choice, speed_choice,
                                 threshold_choice,
                                 mode_choice = "pct_difference") {
   filtered_df <- df %>%
-  filter(
-    segment == segment_choice,
-    threshold == threshold_choice,
-    speed == speed_choice,
-    mode == mode_choice)
+    filter(
+      segment == segment_choice,
+      threshold == threshold_choice,
+      speed == speed_choice,
+      mode == mode_choice)
   dir <- str_glue("../processed_data/outliers/{segment_choice}/{speed_choice}/{threshold_choice}/{mode_choice}")
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   filename <- str_glue("{dir}/{var}.csv")
@@ -89,21 +91,24 @@ save_outlier_tracts <- function(var, segment_choice, speed_choice,
       filter(average_commute_time <  boxplot.stats(average_commute_time)$stats[1])
   } else if (var == "gravity_sum") {
     filtered_df <- filtered_df %>% 
-    filter(gravity_sum >  boxplot.stats(gravity_sum)$stats[5])
+      filter(gravity_sum >  boxplot.stats(gravity_sum)$stats[5])
   }
   filtered_df %>%
     select(FIPS, .data[[var]]) %>%
     unique() %>% 
     write_csv(filename)
-  print(filename)
 }
-# save_outlier_tracts("gravity_sum", "SE01", 20, 30)
+
+pwalk(df %>% select(segment, speed, threshold) %>% unique(),
+      ~save_outlier_tracts("gravity_sum", ..1, ..2, ..3))
+pwalk(df %>% select(segment, speed, threshold) %>% unique(),
+      ~save_outlier_tracts("average_commute_time", ..1, ..2, ..3))
 
 filtered_df <- df %>%
   filter(
     segment == "SE01",
-    threshold == 15,
-    speed == 20,
+    threshold == 20,
+    speed == 30,
     mode == "difference")
 
 ggplot(data = filtered_df, mapping = aes(svi_socioecon_summary, gravity_sum)) +
@@ -121,3 +126,5 @@ filtered_df %>%
   select(FIPS, average_commute_time) %>%
   unique()
 ```
+
+

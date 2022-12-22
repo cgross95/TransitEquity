@@ -45,7 +45,7 @@ load_job_accessibility <- function(dir_processed, dir_raw) {
     mutate(difference = red_line - transit,
            pct_difference = difference / transit) %>%
     pivot_longer(c("transit", "red_line", "difference", "pct_difference"),
-                 names_to = "mode", values_to = "gravity_sum") %>% 
+               names_to = "mode", values_to = "gravity_sum") %>% 
     mutate(mode = factor(mode, levels = c("transit",
                                           "red_line",
                                           "difference",
@@ -72,7 +72,7 @@ average_commute_time <- function(segment, speed, dir_processed) {
   # census tract using transit and the red line. Then use job flow data to
   # compute a weighted average commute time for each tract.
   df <- read_csv(
-    str_glue("{dir_processed}/transit_time_data_speed_{speed}.csv"),
+    str_glue("{dir_processed}/transit_time_data_speed_{speed}_period_8.csv"),
     show_col_types = FALSE)
   job_flows <- read_csv(
     str_glue("{dir_processed}/job_flow_tract_{segment}.csv"), 
@@ -108,7 +108,7 @@ load_all_data <- function(dir_processed, dir_raw) {
   df <- load_job_accessibility(dir_processed, dir_raw)
   df <- df %>%
     group_by(segment) %>%
-    summarize(speed = unique(speed), .groups = "drop") %>% 
+summarize(speed = unique(speed), .groups = "drop") %>% 
     mutate(average_commute_time = 
              map2(segment, speed, 
                   ~average_commute_time(..1, ..2, dir_processed))) %>% 
