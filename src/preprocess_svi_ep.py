@@ -4,22 +4,17 @@ Outputs normalized percentage estimates of SVI indices for census tracts
 """
 import pandas as pd
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler, PowerTransformer
-import seaborn as sns
-import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
 from sys import argv
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-svi2020', nargs=1, type=bool, 
+parser.add_argument('--svi2020', action='store_true', 
 	help='Use 2020 census data (otherwise 2018)')
 
-if __name__ == 'main':
-	args = parser.parse_args(argv[1:])
-	svi2020 = args.svi2020[0] if args.svi2020 != None else True
+def preprocessing(svi2020=True):
 	raw = "svi_md_2020" if svi2020 else "svi_md"
-
+	
 	# Filter SVI data by Baltimore City county
 	df = pd.read_csv(f"../raw_data/{raw}.csv")
 	df = df.loc[df['STCNTY'] == 24510] 
@@ -39,10 +34,15 @@ if __name__ == 'main':
 	# Standardize data to mean zero, variance 1
 	scaler = StandardScaler()
 	df_temp = ep_df.drop(columns='FIPS')
-	scaled_df = pd.DataFrame(scaler.fit_transform(df_temp), columns = df_temp.columns)
+	final_df = pd.DataFrame(scaler.fit_transform(df_temp), columns = df_temp.columns)
 
 	# Add back the FIPS columns in final processing
-	scaled_df['FIPS'] = list(ep_df['FIPS'])
+	final_df['FIPS'] = list(ep_df['FIPS'])
 	
 	output = "SVI_EP_2020_Standard_Scaled" if svi2020 else "SVI_EP_Standard_Scaled"
-	scaled_df.to_csv(f"../processed_data/{output}.csv", index=False)
+	final_df.to_csv(f"../processed_data/{output}.csv", index=False)
+
+if __name__ == '__main__':
+	args = parser.parse_args(argv[1:])
+	svi2020 = args.svi2020
+	preprocessing(svi2020)

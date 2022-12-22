@@ -1,6 +1,8 @@
 from job_data import compute_job_flow, compute_job_totals
 from transit_time import *
 from job_accessibility import compute_job_accessibility
+import preprocess_svi_ep
+from svi_summary_index import compute_svi_summaries
 import argparse
 
 parser = argparse.ArgumentParser(description='Compute Commmute Statistics for Downstram Analysis')
@@ -10,6 +12,7 @@ parser.add_argument('--recompute_current_transit_time', action=argparse.BooleanO
 parser.add_argument('--resimulate_red_line', action=argparse.BooleanOptionalAction)
 parser.add_argument('--speed', type=float, default = 20, help='Speed of the Assumed Red Line; default is 20 mph')
 parser.add_argument('--period', type=float, default = 8, help='Service frequency; Default is 8 minutes')
+parser.add_argument('--svi2020', action='store_true', help='Use 2020 census data (otherwise 2018)')
 args = parser.parse_args()
 
 seg = args.seg
@@ -38,3 +41,7 @@ if resimulate_red_line == True:
 transit_time = compute_transit_time("gtfs_current.csv", f"gtfs_red_line_speed_{int(speed)}_period_{int(period)}.csv", 
     speed = speed, period = period)
 compute_job_accessibility(transit_time, job_totals, seg, speed)
+
+svi2020 = args.svi2020
+preprocess_svi_ep.preprocessing(svi2020)
+compute_svi_summaries(svi2020)
