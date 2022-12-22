@@ -5,7 +5,7 @@ from utils import *
 raw_path, processed_path = set_paths()
 
 def impedance(time, thresh):
-    return (thresh * 2) / (thresh + time)
+    return (thresh * 2) / (thresh + time) - 1
 
 modes = ['transit_current', 'red_line']
 cols = {'transit_time_current', 'transit_time_with_red_line'}
