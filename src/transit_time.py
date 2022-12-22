@@ -76,7 +76,7 @@ def get_all_pair_transit_time(output_file, job_flow, tract_file = "2020_Gaz_trac
 
 
 def compute_transit_time(gtfs_current, gtfs_red_line, speed = 20, period = 8):
-    transit_time_file = processed_path + f"transit_time_data_speed_{int(speed)}_period_{period}.csv"
+    transit_time_file = processed_path + f"transit_time_data_speed_{int(speed)}_period_{int(period)}.csv"
     if not os.path.isfile(transit_time_file):
         current = pd.read_csv(f"{processed_path}{gtfs_current}")[['origin','dest','minutes']].rename(columns={"minutes": "transit_time_current"})
         red_line = pd.read_csv(f"{processed_path}{gtfs_red_line}")[['origin','dest','minutes']].rename(columns={"minutes": "transit_time_with_red_line"})
