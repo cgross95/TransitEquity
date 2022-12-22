@@ -1,0 +1,20 @@
+stop_id,stop_name,stop_lat,stop_lon
+0,Centers for Medicare and Medicaid Services,39.3145693,-76.7630359
+1,Security Square,39.3127311,-76.7511588
+2,Social Security Administration,39.305745,-76.73194900000001
+17,Edmonston Village,39.2934497,-76.691785
+3,Allendale,39.293856,-76.678412
+4,Rosemont,39.2944461,-76.6641639
+5,West Baltimore MARC,39.293159,-76.653328
+6,Harlem Park,39.29356800000001,-76.639083
+7,Poppleton,39.288974,-76.628931
+8,Howard Street/University Center,39.287554,-76.620219
+9,Inner Harbor,39.287811,-76.613653
+10,Harbor East,39.2843323,-76.5982197
+11,Fells Point,39.284544,-76.59337
+12,Canton Crossing,39.277368,-76.565872
+18,Highlandtown/Greektown,39.287164,-76.561414
+13,Bayview MARC,39.2965798,-76.5487754
+14,Bayview Campus,39.290448,-76.5503685
+16,I-70 Park-and-Ride,39.302831,-76.717765
+15,Canton,39.279397,-76.578288

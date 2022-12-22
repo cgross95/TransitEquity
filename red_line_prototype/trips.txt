@@ -1,0 +1,241 @@
+route_id,service_id,trip_id,trip_headsign,direction_id,shape_id
+99999,301,1,Centers for Medicare and Medicaid Services,0,RED
+99999,301,2,Centers for Medicare and Medicaid Services,0,RED
+99999,301,3,Centers for Medicare and Medicaid Services,0,RED
+99999,301,4,Centers for Medicare and Medicaid Services,0,RED
+99999,301,5,Centers for Medicare and Medicaid Services,0,RED
+99999,301,6,Centers for Medicare and Medicaid Services,0,RED
+99999,301,7,Centers for Medicare and Medicaid Services,0,RED
+99999,301,8,Centers for Medicare and Medicaid Services,0,RED
+99999,301,9,Centers for Medicare and Medicaid Services,0,RED
+99999,301,10,Centers for Medicare and Medicaid Services,0,RED
+99999,301,11,Centers for Medicare and Medicaid Services,0,RED
+99999,301,12,Centers for Medicare and Medicaid Services,0,RED
+99999,301,13,Centers for Medicare and Medicaid Services,0,RED
+99999,301,14,Centers for Medicare and Medicaid Services,0,RED
+99999,301,15,Centers for Medicare and Medicaid Services,0,RED
+99999,301,16,Centers for Medicare and Medicaid Services,0,RED
+99999,301,17,Centers for Medicare and Medicaid Services,0,RED
+99999,301,18,Centers for Medicare and Medicaid Services,0,RED
+99999,301,19,Centers for Medicare and Medicaid Services,0,RED
+99999,301,20,Centers for Medicare and Medicaid Services,0,RED
+99999,301,21,Centers for Medicare and Medicaid Services,0,RED
+99999,301,22,Centers for Medicare and Medicaid Services,0,RED
+99999,301,23,Centers for Medicare and Medicaid Services,0,RED
+99999,301,24,Centers for Medicare and Medicaid Services,0,RED
+99999,301,25,Centers for Medicare and Medicaid Services,0,RED
+99999,301,26,Centers for Medicare and Medicaid Services,0,RED
+99999,301,27,Centers for Medicare and Medicaid Services,0,RED
+99999,301,28,Centers for Medicare and Medicaid Services,0,RED
+99999,301,29,Centers for Medicare and Medicaid Services,0,RED
+99999,301,30,Centers for Medicare and Medicaid Services,0,RED
+99999,301,31,Centers for Medicare and Medicaid Services,0,RED
+99999,301,32,Centers for Medicare and Medicaid Services,0,RED
+99999,301,33,Centers for Medicare and Medicaid Services,0,RED
+99999,301,34,Centers for Medicare and Medicaid Services,0,RED
+99999,301,35,Centers for Medicare and Medicaid Services,0,RED
+99999,301,36,Centers for Medicare and Medicaid Services,0,RED
+99999,301,37,Centers for Medicare and Medicaid Services,0,RED
+99999,301,38,Centers for Medicare and Medicaid Services,0,RED
+99999,301,39,Centers for Medicare and Medicaid Services,0,RED
+99999,301,40,Centers for Medicare and Medicaid Services,0,RED
+99999,301,41,Centers for Medicare and Medicaid Services,0,RED
+99999,301,42,Centers for Medicare and Medicaid Services,0,RED
+99999,301,43,Centers for Medicare and Medicaid Services,0,RED
+99999,301,44,Centers for Medicare and Medicaid Services,0,RED
+99999,301,45,Centers for Medicare and Medicaid Services,0,RED
+99999,301,46,Centers for Medicare and Medicaid Services,0,RED
+99999,301,47,Centers for Medicare and Medicaid Services,0,RED
+99999,301,48,Centers for Medicare and Medicaid Services,0,RED
+99999,301,49,Centers for Medicare and Medicaid Services,0,RED
+99999,301,50,Centers for Medicare and Medicaid Services,0,RED
+99999,301,51,Centers for Medicare and Medicaid Services,0,RED
+99999,301,52,Centers for Medicare and Medicaid Services,0,RED
+99999,301,53,Centers for Medicare and Medicaid Services,0,RED
+99999,301,54,Centers for Medicare and Medicaid Services,0,RED
+99999,301,55,Centers for Medicare and Medicaid Services,0,RED
+99999,301,56,Centers for Medicare and Medicaid Services,0,RED
+99999,301,57,Centers for Medicare and Medicaid Services,0,RED
+99999,301,58,Centers for Medicare and Medicaid Services,0,RED
+99999,301,59,Centers for Medicare and Medicaid Services,0,RED
+99999,301,60,Centers for Medicare and Medicaid Services,0,RED
+99999,301,61,Centers for Medicare and Medicaid Services,0,RED
+99999,301,62,Centers for Medicare and Medicaid Services,0,RED
+99999,301,63,Centers for Medicare and Medicaid Services,0,RED
+99999,301,64,Centers for Medicare and Medicaid Services,0,RED
+99999,301,65,Centers for Medicare and Medicaid Services,0,RED
+99999,301,66,Centers for Medicare and Medicaid Services,0,RED
+99999,301,67,Centers for Medicare and Medicaid Services,0,RED
+99999,301,68,Centers for Medicare and Medicaid Services,0,RED
+99999,301,69,Centers for Medicare and Medicaid Services,0,RED
+99999,301,70,Centers for Medicare and Medicaid Services,0,RED
+99999,301,71,Centers for Medicare and Medicaid Services,0,RED
+99999,301,72,Centers for Medicare and Medicaid Services,0,RED
+99999,301,73,Centers for Medicare and Medicaid Services,0,RED
+99999,301,74,Centers for Medicare and Medicaid Services,0,RED
+99999,301,75,Centers for Medicare and Medicaid Services,0,RED
+99999,301,76,Centers for Medicare and Medicaid Services,0,RED
+99999,301,77,Centers for Medicare and Medicaid Services,0,RED
+99999,301,78,Centers for Medicare and Medicaid Services,0,RED
+99999,301,79,Centers for Medicare and Medicaid Services,0,RED
+99999,301,80,Centers for Medicare and Medicaid Services,0,RED
+99999,301,81,Centers for Medicare and Medicaid Services,0,RED
+99999,301,82,Centers for Medicare and Medicaid Services,0,RED
+99999,301,83,Centers for Medicare and Medicaid Services,0,RED
+99999,301,84,Centers for Medicare and Medicaid Services,0,RED
+99999,301,85,Centers for Medicare and Medicaid Services,0,RED
+99999,301,86,Centers for Medicare and Medicaid Services,0,RED
+99999,301,87,Centers for Medicare and Medicaid Services,0,RED
+99999,301,88,Centers for Medicare and Medicaid Services,0,RED
+99999,301,89,Centers for Medicare and Medicaid Services,0,RED
+99999,301,90,Centers for Medicare and Medicaid Services,0,RED
+99999,301,91,Centers for Medicare and Medicaid Services,0,RED
+99999,301,92,Centers for Medicare and Medicaid Services,0,RED
+99999,301,93,Centers for Medicare and Medicaid Services,0,RED
+99999,301,94,Centers for Medicare and Medicaid Services,0,RED
+99999,301,95,Centers for Medicare and Medicaid Services,0,RED
+99999,301,96,Centers for Medicare and Medicaid Services,0,RED
+99999,301,97,Centers for Medicare and Medicaid Services,0,RED
+99999,301,98,Centers for Medicare and Medicaid Services,0,RED
+99999,301,99,Centers for Medicare and Medicaid Services,0,RED
+99999,301,100,Centers for Medicare and Medicaid Services,0,RED
+99999,301,101,Centers for Medicare and Medicaid Services,0,RED
+99999,301,102,Centers for Medicare and Medicaid Services,0,RED
+99999,301,103,Centers for Medicare and Medicaid Services,0,RED
+99999,301,104,Centers for Medicare and Medicaid Services,0,RED
+99999,301,105,Centers for Medicare and Medicaid Services,0,RED
+99999,301,106,Centers for Medicare and Medicaid Services,0,RED
+99999,301,107,Centers for Medicare and Medicaid Services,0,RED
+99999,301,108,Centers for Medicare and Medicaid Services,0,RED
+99999,301,109,Centers for Medicare and Medicaid Services,0,RED
+99999,301,110,Centers for Medicare and Medicaid Services,0,RED
+99999,301,111,Centers for Medicare and Medicaid Services,0,RED
+99999,301,112,Centers for Medicare and Medicaid Services,0,RED
+99999,301,113,Centers for Medicare and Medicaid Services,0,RED
+99999,301,114,Centers for Medicare and Medicaid Services,0,RED
+99999,301,115,Centers for Medicare and Medicaid Services,0,RED
+99999,301,116,Centers for Medicare and Medicaid Services,0,RED
+99999,301,117,Centers for Medicare and Medicaid Services,0,RED
+99999,301,118,Centers for Medicare and Medicaid Services,0,RED
+99999,301,119,Centers for Medicare and Medicaid Services,0,RED
+99999,301,120,Centers for Medicare and Medicaid Services,0,RED
+99999,301,121,Canton,1,RED
+99999,301,122,Canton,1,RED
+99999,301,123,Canton,1,RED
+99999,301,124,Canton,1,RED
+99999,301,125,Canton,1,RED
+99999,301,126,Canton,1,RED
+99999,301,127,Canton,1,RED
+99999,301,128,Canton,1,RED
+99999,301,129,Canton,1,RED
+99999,301,130,Canton,1,RED
+99999,301,131,Canton,1,RED
+99999,301,132,Canton,1,RED
+99999,301,133,Canton,1,RED
+99999,301,134,Canton,1,RED
+99999,301,135,Canton,1,RED
+99999,301,136,Canton,1,RED
+99999,301,137,Canton,1,RED
+99999,301,138,Canton,1,RED
+99999,301,139,Canton,1,RED
+99999,301,140,Canton,1,RED
+99999,301,141,Canton,1,RED
+99999,301,142,Canton,1,RED
+99999,301,143,Canton,1,RED
+99999,301,144,Canton,1,RED
+99999,301,145,Canton,1,RED
+99999,301,146,Canton,1,RED
+99999,301,147,Canton,1,RED
+99999,301,148,Canton,1,RED
+99999,301,149,Canton,1,RED
+99999,301,150,Canton,1,RED
+99999,301,151,Canton,1,RED
+99999,301,152,Canton,1,RED
+99999,301,153,Canton,1,RED
+99999,301,154,Canton,1,RED
+99999,301,155,Canton,1,RED
+99999,301,156,Canton,1,RED
+99999,301,157,Canton,1,RED
+99999,301,158,Canton,1,RED
+99999,301,159,Canton,1,RED
+99999,301,160,Canton,1,RED
+99999,301,161,Canton,1,RED
+99999,301,162,Canton,1,RED
+99999,301,163,Canton,1,RED
+99999,301,164,Canton,1,RED
+99999,301,165,Canton,1,RED
+99999,301,166,Canton,1,RED
+99999,301,167,Canton,1,RED
+99999,301,168,Canton,1,RED
+99999,301,169,Canton,1,RED
+99999,301,170,Canton,1,RED
+99999,301,171,Canton,1,RED
+99999,301,172,Canton,1,RED
+99999,301,173,Canton,1,RED
+99999,301,174,Canton,1,RED
+99999,301,175,Canton,1,RED
+99999,301,176,Canton,1,RED
+99999,301,177,Canton,1,RED
+99999,301,178,Canton,1,RED
+99999,301,179,Canton,1,RED
+99999,301,180,Canton,1,RED
+99999,301,181,Canton,1,RED
+99999,301,182,Canton,1,RED
+99999,301,183,Canton,1,RED
+99999,301,184,Canton,1,RED
+99999,301,185,Canton,1,RED
+99999,301,186,Canton,1,RED
+99999,301,187,Canton,1,RED
+99999,301,188,Canton,1,RED
+99999,301,189,Canton,1,RED
+99999,301,190,Canton,1,RED
+99999,301,191,Canton,1,RED
+99999,301,192,Canton,1,RED
+99999,301,193,Canton,1,RED
+99999,301,194,Canton,1,RED
+99999,301,195,Canton,1,RED
+99999,301,196,Canton,1,RED
+99999,301,197,Canton,1,RED
+99999,301,198,Canton,1,RED
+99999,301,199,Canton,1,RED
+99999,301,200,Canton,1,RED
+99999,301,201,Canton,1,RED
+99999,301,202,Canton,1,RED
+99999,301,203,Canton,1,RED
+99999,301,204,Canton,1,RED
+99999,301,205,Canton,1,RED
+99999,301,206,Canton,1,RED
+99999,301,207,Canton,1,RED
+99999,301,208,Canton,1,RED
+99999,301,209,Canton,1,RED
+99999,301,210,Canton,1,RED
+99999,301,211,Canton,1,RED
+99999,301,212,Canton,1,RED
+99999,301,213,Canton,1,RED
+99999,301,214,Canton,1,RED
+99999,301,215,Canton,1,RED
+99999,301,216,Canton,1,RED
+99999,301,217,Canton,1,RED
+99999,301,218,Canton,1,RED
+99999,301,219,Canton,1,RED
+99999,301,220,Canton,1,RED
+99999,301,221,Canton,1,RED
+99999,301,222,Canton,1,RED
+99999,301,223,Canton,1,RED
+99999,301,224,Canton,1,RED
+99999,301,225,Canton,1,RED
+99999,301,226,Canton,1,RED
+99999,301,227,Canton,1,RED
+99999,301,228,Canton,1,RED
+99999,301,229,Canton,1,RED
+99999,301,230,Canton,1,RED
+99999,301,231,Canton,1,RED
+99999,301,232,Canton,1,RED
+99999,301,233,Canton,1,RED
+99999,301,234,Canton,1,RED
+99999,301,235,Canton,1,RED
+99999,301,236,Canton,1,RED
+99999,301,237,Canton,1,RED
+99999,301,238,Canton,1,RED
+99999,301,239,Canton,1,RED
+99999,301,240,Canton,1,RED

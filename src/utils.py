@@ -3,6 +3,14 @@ import os
 import urllib.request
 import gzip
 import shutil
+from itertools import accumulate
+import zipfile
+
+
+def download_files(url, raw_path):
+    zip_path, _ = urllib.request.urlretrieve(url)
+    with zipfile.ZipFile(zip_path, "r") as f:
+        f.extractall(raw_path)
 
 def get_lodes_file(raw_path, lodes_type, file_name):
     lodes_file = raw_path + file_name
@@ -17,9 +25,9 @@ def get_lodes_file(raw_path, lodes_type, file_name):
     lodes_data = pd.read_csv(lodes_file)
     return lodes_data
 
-def set_paths():
-    processed_relpath = "../processed_data/"
-    raw_relpath = "../raw_data/"
+def set_paths(prefix = "../"):
+    processed_relpath = f"{prefix}processed_data/"
+    raw_relpath = f"{prefix}raw_data/"
 
     processed_path = os.path.join(processed_relpath)
     raw_path = os.path.join(raw_relpath)
@@ -37,3 +45,7 @@ def extract_tract_FIPS(df, col):
 
 def FIPS_to_str(df, col):
     return df[col].apply(lambda x: str(x)[:11])
+
+
+def cumulativeSum(lst):
+    return list(accumulate(lst))
