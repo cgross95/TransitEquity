@@ -20,7 +20,7 @@ def compute_job_flow(seg = "S000", year = '2019'):
         job_data = job_data[['h_geocode', 'w_geocode', "job_totals"]]
         job_data = replace_tracts(job_data)
         job_data = restrict_to_Baltimore(job_data, 'h_geocode')
-        job_data = restrict_to_Baltimore(job_data, 'w_geocode')
+        #job_data = restrict_to_Baltimore(job_data, 'w_geocode')
 
         job_data = job_data.groupby(['h_geocode', 'w_geocode']).sum().reset_index()
         job_data = job_data.loc[job_data["job_totals"] != 0]
@@ -39,7 +39,7 @@ def compute_job_totals(seg = "S000", year = '2019'):
 
         job_data["tract_id"] = FIPS_to_str(job_data, "w_geocode")
         job_data = replace_tracts(job_data)
-        job_data = restrict_to_Baltimore(job_data, 'tract_id')
+        #job_data = restrict_to_Baltimore(job_data, 'tract_id')
 
         job_data.rename(columns={'C000': "job_totals"}, inplace=True)
 
@@ -47,7 +47,6 @@ def compute_job_totals(seg = "S000", year = '2019'):
         job_data = job_data.groupby("tract_id").sum().reset_index()
         job_data = job_data.loc[job_data["job_totals"] != 0]
         job_data.to_csv(job_totals_file, index=False)
-        job_data = replace_tracts(job_data)
     
     job_data = pd.read_csv(job_totals_file)
     print(job_data["job_totals"].sum())
