@@ -5,6 +5,7 @@ import preprocess_svi_ep
 from svi_summary_index import compute_svi_summaries
 from map_outliers import map_outliers
 import argparse
+import subprocess
 
 parser = argparse.ArgumentParser(description='Compute Commmute Statistics for Downstram Analysis')
 parser.add_argument('--year', type=int, default = 2019, help='year of lodes data')
@@ -52,5 +53,5 @@ compute_job_accessibility(transit_time, job_totals, seg, speed, min_thresh=min_t
 svi2020 = args.svi2020
 preprocess_svi_ep.preprocessing(svi2020)
 compute_svi_summaries(svi2020)
-# code to compute outliers here #
+subprocess.call("./compute_outliers.r")
 map_outliers(seg, speed, min_thresh, max_thresh, thresh_step)

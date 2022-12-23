@@ -11,3 +11,4 @@ processed_data/*.pkl
 raw_data/md_od_*
 raw_data/md_wac_*
 otp_*
+results

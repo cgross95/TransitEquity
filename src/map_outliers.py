@@ -9,7 +9,7 @@ def map_outliers(segment, speed, min_thresh, max_thresh, thresh_step):
     for thresh in range(min_thresh, max_thresh + thresh_step, thresh_step):
         for var in ["gravity_sum", "average_commute_time"]:
             fname = (
-                f"../processed_data/outliers/{segment}/{speed}/{thresh}/"
+                f"../results/outliers/{segment}/{speed}/{thresh}/"
                 f"pct_difference/{var}.csv"
             )
 

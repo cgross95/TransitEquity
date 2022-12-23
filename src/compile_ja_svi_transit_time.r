@@ -1,5 +1,4 @@
-library(tidyverse)
-
+suppressPackageStartupMessages(library(tidyverse))
 
 load_job_accessibility <- function(dir_processed, dir_raw) {
   # Read through all job accessibility files
@@ -119,6 +118,5 @@ summarize(speed = unique(speed), .groups = "drop") %>%
                  "SVI_EP_2020_Standard_Scaled_Summary_Index.csv") %>% 
     inner_join(df, by = "FIPS")
   df <- df %>% tag_service_area(dir_raw)
-  print(df)
 }
 
