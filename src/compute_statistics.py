@@ -3,6 +3,7 @@ from transit_time import *
 from job_accessibility import compute_job_accessibility
 import preprocess_svi_ep
 from svi_summary_index import compute_svi_summaries
+from map_outliers import map_outliers
 import argparse
 
 parser = argparse.ArgumentParser(description='Compute Commmute Statistics for Downstram Analysis')
@@ -24,6 +25,9 @@ speed = args.speed
 period = args.period
 recompute_current_transit_time = args.recompute_current_transit_time
 resimulate_red_line = args.resimulate_red_line
+min_thresh = args.thresh_min
+max_thresh = args.thresh_max
+thresh_step = args.thresh_step
 
 job_totals = compute_job_totals(seg = seg, year = year)
 job_flow = compute_job_flow(seg = seg, year = year)
@@ -43,8 +47,10 @@ if resimulate_red_line == True:
 
 transit_time = compute_transit_time("gtfs_current.csv", f"gtfs_red_line_speed_{int(speed)}_period_{int(period)}.csv", 
     speed = speed, period = period)
-compute_job_accessibility(transit_time, job_totals, seg, speed, min_thresh=args.thresh_min, max_thresh=args.thresh_max, thresh_step=args.thresh_step)
+compute_job_accessibility(transit_time, job_totals, seg, speed, min_thresh=min_thresh, max_thresh=max_thresh, thresh_step=thresh_step)
 
 svi2020 = args.svi2020
 preprocess_svi_ep.preprocessing(svi2020)
 compute_svi_summaries(svi2020)
+# code to compute outliers here #
+map_outliers(seg, speed, min_thresh, max_thresh, thresh_step)
