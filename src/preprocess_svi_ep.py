@@ -30,7 +30,8 @@ def preprocessing(svi2020=True):
 	             ]
 	drop_indices = ep_df.index[ep_df["FIPS"].isin(drop_fips)]
 	ep_df = ep_df.drop(index=drop_indices)
-
+	print(ep_df)
+	
 	# Standardize data to mean zero, variance 1
 	scaler = StandardScaler()
 	df_temp = ep_df.drop(columns='FIPS')

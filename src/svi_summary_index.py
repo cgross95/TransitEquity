@@ -14,23 +14,25 @@ parser.add_argument('--svi2020', action='store_true',
 	help='Use 2020 census data (otherwise 2018)')
 
 def compute_svi_summaries(svi2020=True):
-	if svi2020:
-	    filename = "SVI_EP_2020_Standard_Scaled"
-	    indicators = ["EP_POV150", "EP_UNEMP", "EP_HBURD", "EP_NOHSDP"]
-	else:
-	    filename = "SVI_EP_Standard_Scaled"
-	    indicators = ["EP_POV", "EP_UNEMP", "EP_PCI", "EP_NOHSDP"]
-	final_df = pd.read_csv(f"../processed_data/{filename}.csv")
-	socioecon_indicators = final_df.loc[:, indicators]
-	
-	if not svi2020:
-	    # Negate PCI so low numbers correspond to less vulnerable
-	    socioecon_indicators['EP_PCI'] = -socioecon_indicators['EP_PCI']
-	summary_index = socioecon_indicators.sum(axis=1)
-	
-	final_df['svi_socioecon_summary'] = StandardScaler().fit_transform(summary_index.to_numpy().reshape(-1, 1))
-	final_df.to_csv(f"../processed_data/{filename}_Summary_Index.csv", index=False)
-	return(final_df)
+    if svi2020:
+        filename = "SVI_EP_2020_Standard_Scaled"
+        indicators = ["EP_POV150", "EP_UNEMP", "EP_HBURD", "EP_NOHSDP"]
+    else:
+        filename = "SVI_EP_Standard_Scaled"
+        indicators = ["EP_POV", "EP_UNEMP", "EP_PCI", "EP_NOHSDP"]
+    final_df = pd.read_csv(f"../processed_data/{filename}.csv")
+    socioecon_indicators = final_df.loc[:, indicators]
+    print(socioecon_indicators)
+    
+    if not svi2020:
+        # Negate PCI so low numbers correspond to less vulnerable
+        socioecon_indicators['EP_PCI'] = -socioecon_indicators['EP_PCI']
+    summary_index = socioecon_indicators.sum(axis=1)
+    
+    final_df['svi_socioecon_summary'] = StandardScaler().fit_transform(summary_index.to_numpy().reshape(-1, 1))
+    final_df.to_csv(f"../processed_data/{filename}_Summary_Index.csv", index=False)
+    return(final_df)
+
 
 if __name__ == '__main__':
 	args = parser.parse_args(argv[1:])

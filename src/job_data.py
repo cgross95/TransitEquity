@@ -50,4 +50,10 @@ def compute_job_totals(seg = "S000", year = '2019'):
         job_data = replace_tracts(job_data)
     
     job_data = pd.read_csv(job_totals_file)
+    print(job_data["job_totals"].sum())
     return job_data
+
+compute_job_totals()
+compute_job_totals(seg = "SE01")
+compute_job_totals(seg = "SE02")
+compute_job_totals(seg = "SE03")
