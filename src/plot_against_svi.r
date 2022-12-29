@@ -2,21 +2,21 @@
 
 source("./compile_ja_svi_transit_time.r")
 
-svi_facet_formula <- function(seg, threshold, speed, mode) {
+svi_facet_formula <- function(segment, threshold, speed, mode) {
   left <-  ""
   right <-  ""
   # segment + speed + mode ~ threshold
   if(segment) {
-    left <- str_glue("{left} + cyl")
+    left <- str_glue("{left} + segment")
   } 
   if(speed) {
-    left <- str_glue("{left} + class")
+    left <- str_glue("{left} + speed")
   } 
   if(mode) {
-    right <- str_glue("{left} + drv")
+    left <- str_glue("{left} + mode")
   }
   if(threshold) {
-    right <- str_glue("{threshold} + drv")
+    right <- str_glue("{right} + threshold")
   }
   begins_with_plus = "\\s\\+\\s"
   if(left == "") {
@@ -38,14 +38,15 @@ svi_title <- function(seg, threshold, speed, mode) {
     title <- str_glue("{title} Segment: {seg}")
   }
   if (length(threshold) == 1) {
-    title <- str_glue("{threshold} Threshold: {threshold}")
+    title <- str_glue("{title} Threshold: {threshold}")
   }
   if (length(speed) == 1) {
-    title <- str_glue("{speed} Threshold: {speed}")
+    title <- str_glue("{title} Speed: {speed}")
   }
   if (length(mode) == 1) {
-    title <- str_glue("{mode} Mode: {mode}")
-}
+    title <- str_glue("{title} Mode: {mode}")
+  }
+  title
 }
 
 vs_svi_fname <- function(df, var, seg_choice,
@@ -56,7 +57,7 @@ vs_svi_fname <- function(df, var, seg_choice,
   threshold_str <- threshold_choice %>% as.character() %>%
     str_flatten(collapse = "_")
   speed_str <- speed_choice %>% as.character() %>% str_flatten(collapse = "_")
-mode_str <- mode_choice %>% as.character() %>% str_flatten(collapse = "_")
+  mode_str <- mode_choice %>% as.character() %>% str_flatten(collapse = "_")
   dir <- str_glue("../results/vs_svi/{seg_str}/{speed_str}/{threshold_str}/{mode_str}")
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   var_name <- df %>% select({{ var }}) %>% colnames()
@@ -83,6 +84,7 @@ vs_svi <- function(df,
                                          length(threshold_choice) > 1,
                                          length(speed_choice) > 1,
                                          length(mode_choice) > 1)
+  print(svi_facet_formula)
   svi_title <- svi_title(seg_choice,
                          threshold_choice,
                          speed_choice,
@@ -91,7 +93,8 @@ vs_svi <- function(df,
   ggplot(data = filtered_df, mapping = aes(svi_socioecon_summary, {{ var }})) +
     geom_point(alpha = 0.4) +
     geom_smooth(method = "lm", formula = "y ~ x") +
-    facet_grid(segment + speed + mode ~ threshold)
+    facet_grid(svi_facet_formula) +
+    labs(title = svi_title)
   fname <- vs_svi_fname(df, {{ var }}, seg_choice, threshold_choice,
                         speed_choice, mode_choice)
   ggsave(fname, width = 10, height = 10)
