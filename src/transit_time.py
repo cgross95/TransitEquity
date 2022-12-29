@@ -21,7 +21,7 @@ def get_all_pair_transit_time(output_file, job_flow, tract_file = "2020_Gaz_trac
         f.close()
 
         tracts = tracts[['GEOID', 'INTPTLAT', 'INTPTLONG']]
-        # This is specific to maryland tracts
+        # This is specific to Maryland tracts
         tracts.loc[1456,['INTPTLAT', 'INTPTLONG']] = [39.34673721019194, -76.68057889700162]
 
         df = job_flow.merge(tracts, left_on="h_geocode", right_on="GEOID").merge(tracts, left_on="w_geocode", right_on="GEOID")

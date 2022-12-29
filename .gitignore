@@ -8,7 +8,6 @@ processed_data/outliers
 processed_data/*.pkl
 .Rhistory
 .DS_Store
-raw_data/md_od_*
-raw_data/md_wac_*
+raw_data/md_*
 otp_*
 results
