@@ -84,7 +84,6 @@ vs_svi <- function(df,
                                          length(threshold_choice) > 1,
                                          length(speed_choice) > 1,
                                          length(mode_choice) > 1)
-  print(svi_facet_formula)
   svi_title <- svi_title(seg_choice,
                          threshold_choice,
                          speed_choice,
