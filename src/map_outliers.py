@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 
 def map_outliers(segment, speed, min_thresh, max_thresh, thresh_step):
+    # outliers are always computed and mapped using pct_difference
+    mode = "difference"  # can be pct_difference, only changes cloropleth coloring
     speed = int(speed)
     for thresh in range(min_thresh, max_thresh + thresh_step, thresh_step):
         for var in ["gravity_sum", "average_commute_time"]:
@@ -22,25 +24,37 @@ def map_outliers(segment, speed, min_thresh, max_thresh, thresh_step):
             outliers = outliers.astype({'GEOID': str})
             gdf = pd.merge(gdf, outliers, on="GEOID", how="inner")
             # Set to be percentage out of 100
-            gdf.loc[:, var] = 100 * gdf.loc[:, var]
+            if mode == "pct_difference":
+                gdf.loc[:, f"{var}_{mode}"] = 100 * gdf.loc[:, f"{var}_{mode}"]
 
             # Optionally mask out certain tracts if colors aren't informative
             if False:
-                mask = gdf[var] > 10
+                mask = gdf[f"{var}_{mode}"] > 10
                 gdf_mask = gdf.loc[mask, :]
             else:
                 gdf_mask = gdf
 
-            if var == "gravity_sum":
-                label = "% increase in job accessibility with Red Line"
-            elif var == "average_commute_time":
-                label = "% decrease in average commute time with Red Line"
+            mode_dict = {"difference": "change",
+                         "pct_difference": "percent change"}
+            var_dict = {"gravity_sum": "job accessibility",
+                        "average_commute_time": "average commute time"}
+            unit_dict = {"difference": {"gravity_sum": " (number of jobs)",
+                                        "average_commute_time": " (minutes)"},
+                         "pct_difference": {"gravity_sum": "",
+                                            "average_commute_time": ""}
+                        }
+            label = f"{mode_dict[mode]} in {var_dict[var]} with Red Line{unit_dict[mode][var]}"
 
-            ax = gdf_mask.plot(var, figsize=(20, 20), alpha=0.5, edgecolor='k',
+            ax = gdf_mask.plot(f"{var}_{mode}", figsize=(20, 20), alpha=0.5, edgecolor='k',
                                legend=True,
                                legend_kwds={'label': label,
                                             'orientation': "horizontal"})
+            
+            cent = gdf_mask.centroid
+            for (x, y, svi) in zip(cent.x, cent.y, gdf["svi_pct_rank"]):
+                ax.text(x, y, f"{svi:.0%}", fontsize=15, ha='center')
             cx.add_basemap(ax, source=cx.providers.OpenStreetMap.Mapnik, zoom=13)
             ax.set_xticks([])
             ax.set_yticks([])
+            ax.set_title("Tracts are colored by their change in the specified metric and labeled by their social vulnerability percentile (higher is more vulnerable)")
             plt.savefig(fname[:-4])

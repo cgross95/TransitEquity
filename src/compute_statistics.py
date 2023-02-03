@@ -76,8 +76,8 @@ compute_job_accessibility(transit_time, job_totals, seg, speed,
 svi2020 = args.svi2020
 preprocess_svi_ep.preprocessing(svi2020)
 compute_svi_summaries(svi2020)
-
 # Compute results
-subprocess.call("./plot_against_svi.r")
+subprocess.call("./summarize_pre_post.r")
+subprocess.call(f"./plot_against_svi.r --thresh_min {min_thresh} --thresh_max {max_thresh} --thresh_step {thresh_step}".split())
 subprocess.call("./compute_outliers.r")
 map_outliers(seg, speed, min_thresh, max_thresh, thresh_step)
