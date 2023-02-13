@@ -146,11 +146,17 @@ parser$add_argument('--thresh_max', type="integer", default=90,
                     help='Largest commute threshold to consider')
 parser$add_argument('--thresh_step', type="integer", default=15,
                     help='Step between commute thresholds')
+parser$add_argument('--service_area', action='store_true',
+                    help='Restrict computations to origin and destination tracts that are in the service area')
 args <- parser$parse_args()
 
 thresh <- seq(args$thresh_min, args$thresh_max, args$thresh_step)
 
-df <- load_all_data("../processed_data/", "../raw_data/")
+if (args$service_area) {
+  df <- load_service_to_service_data("../processed_data/", "../raw_data/")
+} else {
+  df <- load_all_data("../processed_data/", "../raw_data/")
+}
 
 pwalk(df %>% select(segment) %>% unique(),
       ~vs_svi(df, gravity_sum, seg_choice = ..1, threshold_choice = thresh))

@@ -1,5 +1,6 @@
 #! /usr/bin/Rscript
 
+library("argparse")
 source("./compile_ja_svi_transit_time.r")
 
 save_outlier_tracts <- function(var, segment_choice, speed_choice,
@@ -30,7 +31,17 @@ save_outlier_tracts <- function(var, segment_choice, speed_choice,
     write_csv(filename)
 }
 
-df <- load_all_data("../processed_data/", "../raw_data/")
+
+parser <- ArgumentParser(description="Compute outliers for commute time and job accessibility")
+parser$add_argument('--service_area', action='store_true',
+                    help='Restrict computations to origin and destination tracts that are in the service area')
+args <- parser$parse_args()
+
+if (args$service_area) {
+  df <- load_service_to_service_data("../processed_data/", "../raw_data/")
+} else {
+  df <- load_all_data("../processed_data/", "../raw_data/")
+}
 
 pwalk(df %>% select(segment, speed, threshold) %>% unique(),
       ~save_outlier_tracts("gravity_sum", ..1, ..2, ..3))

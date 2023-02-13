@@ -68,7 +68,8 @@ load_svi <- function(dir_processed, svi_file) {
              length(svi_socioecon_summary))
 }
 
-average_commute_time <- function(segment, speed, dir_processed, weight = TRUE) {
+average_commute_time <- function(segment, speed, dir_processed, dir_raw,
+                                 weight = TRUE, service_area = FALSE) {
   # Load the time it takes to commute from each census tract to each other
   # census tract using transit and the red line. Then, if weight is TRUE, use 
   # job flow data to compute a weighted average commute time for each tract.
@@ -85,6 +86,12 @@ average_commute_time <- function(segment, speed, dir_processed, weight = TRUE) {
               by = c("origin" = "h_geocode", 
                      "dest" = "w_geocode")) %>% 
     mutate(job_totals = replace_na(job_totals, 0))
+  
+  if (service_area) {
+    service_area_tracts <- readLines(str_glue("{dir_raw}/service_area.csv"))
+    df <- df %>% filter(origin %in% service_area_tracts,
+                        dest %in% service_area_tracts)
+  }
   
   # Compute (weighted) average commute time
   df <- df %>% 
@@ -124,7 +131,8 @@ load_all_data <- function(dir_processed, dir_raw, weight = TRUE) {
     summarize(speed = unique(speed), .groups = "drop") %>% 
     mutate(average_commute_time = 
              map2(segment, speed, 
-                  ~average_commute_time(..1, ..2, dir_processed, weight))) %>% 
+                  ~average_commute_time(..1, ..2, dir_processed, dir_raw, 
+                                        weight))) %>% 
     unnest(cols = average_commute_time) %>% 
     rename(FIPS = origin) %>% 
     left_join(df, by = c("FIPS", "segment", "speed", "mode"))
@@ -133,4 +141,26 @@ load_all_data <- function(dir_processed, dir_raw, weight = TRUE) {
     inner_join(df, by = "FIPS")
   df <- df %>% tag_service_area(dir_raw)
 }
+
+load_service_to_service_data <- function(dir_processed, dir_raw, weight = TRUE) {
+  # loads only service area tracts and computes relative to service area tracts
+  # weight determines whether average commute times are weighted by job flow
+  df <- load_job_accessibility(dir_processed, dir_raw) %>% 
+    tag_service_area(dir_raw) %>% 
+    filter(service_area == TRUE)
+  df <- df %>%
+    group_by(segment) %>%
+    summarize(speed = unique(speed), .groups = "drop") %>% 
+    mutate(average_commute_time = 
+             map2(segment, speed, 
+                  ~average_commute_time(..1, ..2, dir_processed, dir_raw, weight,
+                                        service_area = TRUE))) %>% 
+    unnest(cols = average_commute_time) %>% 
+    rename(FIPS = origin) %>% 
+    left_join(df, by = c("FIPS", "segment", "speed", "mode"))
+  df <- load_svi(dir_processed,
+                 "SVI_EP_2020_Standard_Scaled_Summary_Index.csv") %>% 
+    inner_join(df, by = "FIPS")
+}
+
 

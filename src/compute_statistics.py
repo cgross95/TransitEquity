@@ -8,7 +8,7 @@ import argparse
 import subprocess
 
 parser = argparse.ArgumentParser(
-    description='Compute Commmute Statistics for Downstram Analysis')
+    description='Compute Commmute Statistics for Downstream Analysis')
 parser.add_argument('--year', type=int, default=2019,
                     help='year of lodes data')
 parser.add_argument('--seg', type=str, default='S000',
@@ -29,6 +29,8 @@ parser.add_argument('--thresh_max', type=int, default=90,
                     help='Largest commute threshold to consider')
 parser.add_argument('--thresh_step', type=int, default=15,
                     help='Step between commute thresholds')
+parser.add_argument('--service_area', action='store_true',
+                    help='Restrict computations to origin and destination tracts that are in the service area')
 args = parser.parse_args()
 
 seg = args.seg
@@ -40,6 +42,7 @@ resimulate_red_line = args.resimulate_red_line
 min_thresh = args.thresh_min
 max_thresh = args.thresh_max
 thresh_step = args.thresh_step
+service_area = args.service_area
 
 # Get job data
 job_totals = compute_job_totals(seg=seg, year=year)
@@ -70,14 +73,15 @@ transit_time = compute_transit_time("gtfs_current.csv",
 # Compute job accessibility
 compute_job_accessibility(transit_time, job_totals, seg, speed,
                           min_thresh=min_thresh, max_thresh=max_thresh,
-                          thresh_step=thresh_step)
+                          thresh_step=thresh_step, service_area=service_area)
 
 # Load SVI data
 svi2020 = args.svi2020
 preprocess_svi_ep.preprocessing(svi2020)
 compute_svi_summaries(svi2020)
 # Compute results
-subprocess.call("./summarize_pre_post.r")
-subprocess.call(f"./plot_against_svi.r --thresh_min {min_thresh} --thresh_max {max_thresh} --thresh_step {thresh_step}".split())
-subprocess.call("./compute_outliers.r")
+service_area_arg = "--service_area" if service_area else ""
+subprocess.call(f"./summarize_pre_post.r {service_area_arg}".split())
+subprocess.call(f"./plot_against_svi.r --thresh_min {min_thresh} --thresh_max {max_thresh} --thresh_step {thresh_step} {service_area_arg}".split())
+subprocess.call(f"./compute_outliers.r {service_area_arg}".split())
 map_outliers(seg, speed, min_thresh, max_thresh, thresh_step)

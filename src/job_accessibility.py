@@ -11,9 +11,13 @@ modes = ['transit_current', 'red_line']
 cols = {'transit_time_current', 'transit_time_with_red_line'}
 time_col = {'transit_current': 'transit_time_current', 'red_line': 'transit_time_with_red_line'}
 
-def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed, min_thresh, max_thresh, thresh_step):
+def compute_job_accessibility(travel_time, job_totals, seg, assumed_train_speed, min_thresh, max_thresh, thresh_step, service_area):
 
     df = job_totals.merge(travel_time, left_on="tract_id", right_on="dest")
+    if service_area:
+        service_tracts = list(pd.read_csv(f"{raw_path}/service_area.csv", header=None)[0])
+        df = df[df["origin"].isin(service_tracts) & df["dest"].isin(service_tracts)]
+
 
     df.drop("tract_id", axis=1, inplace=True)
     df.rename(columns={"origin": "tract_id",}, inplace=True)
