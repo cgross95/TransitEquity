@@ -46,8 +46,8 @@ base_url = 'https://external.transitapp.com/v3/otp/plan?'
 
 headers = {'apiKey': '0887dadd7934d9f08c73689aba903e2df4181b80799114188a1bc82cfc533e82'}
 
-params =  {'date'         : '11/01/2022',
-                    'time'            : '8:00AM',
+params =  {#'date'         : '11/01/2022',
+           #         'time'            : '8:00AM',
                     'fromPlace'       : '%s,%s' % (39.2736267,-76.60028),
                     'toPlace'         : '%s,%s' % (39.2887712,-76.5887716),
                     'numItineraries'  : 10}
@@ -59,6 +59,7 @@ response = urllib.request.urlopen(req)
 
 content = response.read()
 objs = json.loads(content)
+print(objs['plan']['itineraries'][2]['legs'][1])
 durations = [i['duration'] for i in objs['plan']['itineraries']]
 duration = np.min(durations)/60
 
